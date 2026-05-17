@@ -7,3 +7,5 @@ whitenoise
 requests
 beautifulsoup4
 trafilatura
+PyJWT
+cryptography
