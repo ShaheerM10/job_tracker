@@ -1,0 +1,128 @@
+{% extends 'app_base.html' %}
+{% block title %}Dashboard — Trackr{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block topbar_actions %}<a href="{% url 'add_application' %}" class="btn btn-coral btn-sm">+ New Application</a>{% endblock %}
+{% block extra_css %}
+<style>
+.welcome-banner { background: var(--brown); border-radius: var(--radius); padding: 1.75rem 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+.welcome-banner::before { content: ''; position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(224,90,58,0.25) 0%, transparent 65%); }
+.welcome-h { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
+.welcome-h span { color: var(--coral); }
+.welcome-sub { color: rgba(255,255,255,0.45); font-size: 0.825rem; margin-top: 4px; }
+.welcome-stat { text-align: right; position: relative; z-index: 1; }
+.welcome-stat-num { font-family: var(--font-head); font-size: 3rem; font-weight: 800; color: var(--coral); letter-spacing: -0.03em; line-height: 1; }
+.welcome-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media(max-width:700px){ .stats-row{grid-template-columns:repeat(2,1fr);} }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+.stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--stat-color, var(--coral)); }
+.stat-card.c-coral { --stat-color: var(--coral); }
+.stat-card.c-blue { --stat-color: var(--blue); }
+.stat-card.c-green { --stat-color: var(--green); }
+.stat-card.c-amber { --stat-color: var(--amber); }
+.stat-num { font-family: var(--font-head); font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--brown); }
+.stat-label { font-size: 0.7rem; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+
+.charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+@media(max-width:800px){ .charts-row{grid-template-columns:1fr;} }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+.card-eyebrow { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; }
+.chart-wrap { height: 170px; position: relative; }
+
+.recent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
+.card-head-title { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.app-row { display: grid; grid-template-columns: 1fr 120px 130px 55px; align-items: center; padding: 0.875rem 1.5rem; border-bottom: 1px solid var(--border); transition: background 0.1s; gap: 1rem; }
+.app-row:last-child { border-bottom: none; }
+.app-row:hover { background: var(--cream); }
+.app-co-cell { display: flex; align-items: center; gap: 10px; }
+.app-co-logo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--cream2); display: flex; align-items: center; justify-content: center; }
+.app-co-logo img { width: 26px; height: 26px; object-fit: contain; border-radius: 0; border: none; display: block; }
+.app-co-fallback { width: 26px; height: 26px; display: none; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: var(--brown); font-family: var(--font-head); }
+.app-co-name { font-size: 0.72rem; color: var(--muted); }
+.app-role { font-size: 0.825rem; font-weight: 500; color: var(--brown); }
+.app-date-cell { font-size: 0.72rem; color: var(--muted); }
+.app-edit { font-size: 0.72rem; color: var(--muted); text-decoration: none; }
+.app-edit:hover { color: var(--coral); }
+.empty-state { padding: 3rem; text-align: center; }
+.empty-state p { font-size: 0.875rem; color: var(--muted); margin-bottom: 1rem; }
+</style>
+{% endblock %}
+{% block page_content %}
+
+<div class="welcome-banner">
+  <div>
+    <div class="welcome-h">Good to see you{% if user.first_name %}, <span>{{ user.first_name }}</span>{% endif %}.</div>
+    <div class="welcome-sub">Here's your job search overview.</div>
+  </div>
+  <div class="welcome-stat">
+    <div class="welcome-stat-num">{{ total }}</div>
+    <div class="welcome-stat-label">Total Applications</div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card c-coral"><div class="stat-num">{{ total }}</div><div class="stat-label">Applied</div></div>
+  <div class="stat-card c-blue"><div class="stat-num">{{ active_count }}</div><div class="stat-label">In Progress</div></div>
+  <div class="stat-card c-amber"><div class="stat-num">{{ response_rate }}%</div><div class="stat-label">Response Rate</div></div>
+  <div class="stat-card c-green"><div class="stat-num">{{ offer_count }}</div><div class="stat-label">Offers</div></div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="card-eyebrow">Applications Over Time</div>
+    <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="card-eyebrow">Status Breakdown</div>
+    <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+  </div>
+</div>
+
+<div class="recent-card">
+  <div class="card-head">
+    <span class="card-head-title">Recent Applications</span>
+    <a href="{% url 'application_list' %}" class="btn btn-outline btn-xs">View All →</a>
+  </div>
+  {% if recent %}
+  {% for app in recent %}
+  <div class="app-row">
+    <div class="app-co-cell">
+      <div class="app-co-logo">
+        <img src="{% url 'company_logo' app.company %}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="app-co-fallback">{{ app.company|first|upper }}</div>
+      </div>
+      <div>
+        <div class="app-co-name">{{ app.company }}</div>
+        <div class="app-role">{{ app.job_title }}</div>
+      </div>
+    </div>
+    <div class="app-date-cell">{{ app.applied_date|date:"M d, Y" }}</div>
+    <div><span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span></div>
+    <div><a href="{% url 'edit_application' app.pk %}" class="app-edit">Edit</a></div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <p>No applications yet — start tracking your job search.</p>
+    <a href="{% url 'add_application' %}" class="btn btn-coral btn-sm">Add Your First</a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const tc='#9A8070', gc='#E0D8CC';
+const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+new Chart(document.getElementById('monthlyChart'),{
+  type:'bar',
+  data:{labels:{{ monthly_labels|safe }},datasets:[{data:{{ monthly_data|safe }},backgroundColor:'#E05A3A',borderRadius:5,borderSkipped:false,hoverBackgroundColor:'#c44a2c'}]},
+  options:{...base,scales:{x:{ticks:{color:tc,font:{size:11,family:'DM Sans'}},grid:{display:false},border:{display:false}},y:{ticks:{color:tc,font:{size:11,family:'DM Sans'},stepSize:1},grid:{color:gc},border:{display:false},beginAtZero:true}}}
+});
+new Chart(document.getElementById('statusChart'),{
+  type:'doughnut',
+  data:{labels:{{ status_labels|safe }},datasets:[{data:{{ status_data|safe }},backgroundColor:['#dbeafe','#ede9fe','#fef3c7','#ffedd5','#dcfce7','#fee2e2','#f5f5f5','#bbf7d0'],borderColor:'transparent',borderWidth:2}]},
+  options:{...base,cutout:'70%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{size:11,family:'DM Sans'},padding:8,boxWidth:9}}}}
+});
+</script>
+{% endblock %}

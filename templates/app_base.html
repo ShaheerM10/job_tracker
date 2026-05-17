@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}">Trackr <span class="logo-dot"></span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'application_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'application_list' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Applications
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Actions</div>
+      <a href="{% url 'add_application' %}" class="sidebar-link {% if request.resolver_match.url_name == 'add_application' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add Application
+      </a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user.first_name.0|default:user.email.0|upper }}</div>
+        <div>
+          <div class="sidebar-user-name">{{ user.get_full_name|default:"User" }}</div>
+          <div class="sidebar-user-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a href="{% url 'logout' %}" class="btn btn-ghost btn-xs w-full" style="justify-content:center;color:rgba(255,255,255,0.4);">Sign out</a>
+    </div>
+  </aside>
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
+      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </div>
+    <div class="page-body">{% block page_content %}{% endblock %}</div>
+  </div>
+</div>
+{% endblock %}

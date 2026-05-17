@@ -1,0 +1,4 @@
+django>=5.0
+django-allauth>=65.0
+Pillow>=10.0
+python-dotenv>=1.0

@@ -1,0 +1,48 @@
+{% extends 'app_base.html' %}
+{% block title %}Delete — Trackr{% endblock %}
+{% block topbar_title %}Applications{% endblock %}
+{% block extra_css %}
+<style>
+.modal-overlay { position: fixed; inset: 0; background: rgba(28,8,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: white; border-radius: 18px; padding: 2.5rem; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 24px 60px rgba(28,8,0,0.2); animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1); }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-icon { width: 56px; height: 56px; background: var(--red-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 1.4rem; }
+.modal-title { font-family: var(--font-head); font-size: 1.5rem; color: var(--brown); margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+.modal-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.75rem; }
+.modal-desc strong { color: var(--brown); }
+.modal-divider { height: 1px; background: var(--border); margin-bottom: 1.5rem; }
+.modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
+.btn-delete { background: var(--red); color: white; padding: 10px 28px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.875rem; border: none; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+.btn-delete:hover { background: #b91c1c; transform: translateY(-1px); }
+.btn-cancel { background: white; color: var(--text2); padding: 10px 28px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.875rem; border: 1.5px solid var(--border2); cursor: pointer; font-family: var(--font-body); transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
+.btn-cancel:hover { border-color: var(--brown); color: var(--brown); }
+</style>
+{% endblock %}
+{% block page_content %}
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-icon">🗑</div>
+    <h2 class="modal-title">Delete this application?</h2>
+    <p class="modal-desc"><strong>{{ app.job_title }}</strong> at {{ app.company }} will be permanently removed.</p>
+    <div class="modal-divider"></div>
+    <div class="modal-actions">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete">Delete it</button>
+      </form>
+      <a href="{% url 'application_list' %}" class="btn-cancel">Cancel</a>
+    </div>
+  </div>
+</div>
+<script>
+// Close on overlay click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) window.location.href = "{% url 'application_list' %}";
+});
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') window.location.href = "{% url 'application_list' %}";
+});
+</script>
+{% endblock %}
