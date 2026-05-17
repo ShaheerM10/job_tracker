@@ -107,3 +107,6 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# Skip intermediate 'Sign in via Google' confirmation page
+SOCIALACCOUNT_LOGIN_ON_GET = True
