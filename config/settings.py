@@ -110,3 +110,6 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 # Skip intermediate 'Sign in via Google' confirmation page
 SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Fix HTTPS on Railway
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
