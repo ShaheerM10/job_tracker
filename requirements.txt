@@ -9,3 +9,5 @@ beautifulsoup4
 trafilatura
 PyJWT
 cryptography
+psycopg2-binary
+dj-database-url
