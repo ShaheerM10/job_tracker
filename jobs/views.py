@@ -10,6 +10,8 @@ import os
 import json
 from .models import JobApplication
 from .forms import JobApplicationForm
+from zoneinfo import ZoneInfo
+import django.utils.timezone as dj_tz
 
 
 def landing(request):
@@ -406,3 +408,14 @@ def scrape_job(request):
         return JsonResponse({'error': 'Request timed out. Try pasting the details manually.'}, status=408)
     except Exception as e:
         return JsonResponse({'error': f'Could not scrape this page. Try pasting the details manually.'}, status=500)
+
+
+
+def set_timezone(request):
+    from django.http import JsonResponse
+    import json
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        tz = data.get('timezone', 'UTC')
+        request.session['timezone'] = tz
+    return JsonResponse({'status': 'ok'})    

@@ -7,4 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('', include('jobs.urls')),
+    path('set-timezone/', views.set_timezone, name='set_timezone'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

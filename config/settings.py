@@ -38,6 +38,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'tz_detect.middleware.TimezoneMiddleware', 
+    'jobs.middleware.TimezoneMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
