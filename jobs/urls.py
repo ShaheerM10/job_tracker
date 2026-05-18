@@ -15,5 +15,6 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('logo/<str:company>/', views.company_logo, name='company_logo'),
     path('scrape-job/', views.scrape_job, name='scrape_job'),
+    path('set-timezone/', views.set_timezone, name='set_timezone'),
 ]
 # Already imported views above
