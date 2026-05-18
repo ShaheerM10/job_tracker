@@ -11,3 +11,4 @@ PyJWT
 cryptography
 psycopg2-binary
 dj-database-url
+django-tz-detect
