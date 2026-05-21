@@ -221,7 +221,8 @@ def add_application(request):
             app.save()
             return redirect('dashboard')
     else:
-        form = JobApplicationForm()
+        local_today = timezone.localdate()
+        form = JobApplicationForm(initial={'applied_date': local_today})
     return render(request, 'jobs/form.html', {'form': form, 'title': 'New Application'})
 
 
