@@ -1,0 +1,153 @@
+{% extends 'app_base.html' %}
+{% block title %}Settings — Trackr{% endblock %}
+{% block topbar_title %}Settings{% endblock %}
+{% block extra_css %}
+<style>
+.settings-wrap {
+  max-width: 560px;
+}
+.settings-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(34,36,42,0.06);
+  margin-bottom: 1.5rem;
+}
+.settings-card-header {
+  padding: 1.25rem 1.75rem; border-bottom: 1px solid var(--border);
+  background: var(--grey4);
+}
+.settings-card-title {
+  font-size: 0.9rem; font-weight: 700; color: var(--black); margin-bottom: 2px;
+}
+.settings-card-desc {
+  font-size: 0.78rem; color: var(--muted);
+}
+.settings-card-body {
+  padding: 1.5rem 1.75rem;
+}
+.tz-select-wrap { position: relative; }
+.tz-select {
+  width: 100%;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: var(--font-body); font-size: 0.875rem;
+  padding: 10px 36px 10px 14px;
+  outline: none; transition: all 0.15s;
+  appearance: none; -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.tz-select:focus { border-color: var(--black); box-shadow: 0 0 0 3px rgba(34,36,42,0.08); }
+.tz-select optgroup { font-weight: 600; font-size: 0.8rem; color: var(--muted); }
+.tz-select option { font-weight: 400; padding: 4px 0; }
+
+.current-tz-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary); color: var(--black);
+  border-radius: 8px; padding: 5px 12px;
+  font-size: 0.78rem; font-weight: 600;
+  margin-top: 1rem;
+}
+.current-tz-pill svg { width: 13px; height: 13px; }
+
+.settings-save-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 1.25rem; padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.save-hint { font-size: 0.75rem; color: var(--muted); }
+
+.preview-box {
+  background: var(--grey4); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+.preview-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+.preview-date { font-size: 1.1rem; font-weight: 700; color: var(--black); }
+.preview-time { font-size: 0.85rem; color: var(--text2); margin-top: 2px; }
+</style>
+{% endblock %}
+{% block page_content %}
+
+<div class="settings-wrap anim-fade-up">
+
+  {% if messages %}
+  {% for message in messages %}
+  <div style="padding:10px 16px;border-radius:10px;margin-bottom:1rem;font-size:0.82rem;font-weight:500;
+    {% if message.tags == 'success' %}background:#edf7f2;border:1px solid var(--green-bd);color:var(--green);
+    {% else %}background:var(--red-bg);border:1px solid var(--red-bd);color:var(--red);{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <div class="settings-card-title">
+        <svg style="display:inline;width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Timezone
+      </div>
+      <div class="settings-card-desc">All dates and times in the app will display in your selected timezone.</div>
+    </div>
+    <div class="settings-card-body">
+      <form method="post">
+        {% csrf_token %}
+        <label class="form-label" for="tz-picker">Select your location / timezone</label>
+        <div class="tz-select-wrap">
+          <select id="tz-picker" name="timezone" class="tz-select" onchange="previewTz(this.value)">
+            {% for region, zones in timezone_choices %}
+            <optgroup label="{{ region }}">
+              {% for tz_val, tz_label in zones %}
+              <option value="{{ tz_val }}" {% if tz_val == current_tz %}selected{% endif %}>{{ tz_label }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Live preview -->
+        <div class="preview-box">
+          <div class="preview-label">Preview — current time in selected zone</div>
+          <div class="preview-date" id="preview-date">—</div>
+          <div class="preview-time" id="preview-time"></div>
+        </div>
+
+        <div class="settings-save-row">
+          <span class="save-hint">Current timezone: <strong>{{ current_tz }}</strong></span>
+          <button type="submit" class="btn btn-coral btn-sm">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function previewTz(tz) {
+  try {
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('en-US', {
+      timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    var timeStr = now.toLocaleTimeString('en-US', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    document.getElementById('preview-date').textContent = dateStr;
+    document.getElementById('preview-time').textContent = timeStr;
+  } catch(e) {
+    document.getElementById('preview-date').textContent = 'Invalid timezone';
+    document.getElementById('preview-time').textContent = '';
+  }
+}
+
+// Init preview on load
+(function() {
+  var sel = document.getElementById('tz-picker');
+  if (sel) previewTz(sel.value);
+  setInterval(function() {
+    if (sel) previewTz(sel.value);
+  }, 1000);
+})();
+</script>
+{% endblock %}

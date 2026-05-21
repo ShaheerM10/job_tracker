@@ -14,9 +14,21 @@ class JobApplication(models.Model):
         ('accepted', 'Accepted'),
     ]
 
+    EMPLOYMENT_TYPE_CHOICES = [
+        ('', '—'),
+        ('full_time', 'Full-time'),
+        ('part_time', 'Part-time'),
+        ('contract', 'Contract'),
+        ('internship', 'Internship'),
+        ('temporary', 'Temporary'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications')
     job_title = models.CharField(max_length=200)
     company = models.CharField(max_length=200)
+    location = models.CharField(max_length=200, blank=True, null=True)
+    salary_range = models.CharField(max_length=120, blank=True, null=True)
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPE_CHOICES, blank=True, default='')
     job_link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)

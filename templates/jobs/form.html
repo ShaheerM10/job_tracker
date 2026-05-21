@@ -4,40 +4,43 @@
 {% block extra_css %}
 <style>
 .form-wrap { width: 100%; }
-.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; margin-top: 1rem; box-shadow: var(--shadow); }
+.form-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; margin-top: 1rem; box-shadow: var(--shadow); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.25rem; }
 .full { grid-column: 1/-1; }
 .form-footer { display: flex; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 .error-text { font-size: 0.72rem; color: var(--red); margin-top: 3px; }
-.file-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; background: var(--bg); }
-.file-zone:hover { border-color: var(--coral); background: #fdf9f6; }
+.file-zone { border: 1.5px dashed var(--border); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; background: var(--grey4); }
+.file-zone:hover { border-color: var(--black); background: var(--grey35); }
 .file-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 .file-zone-label { font-size: 0.825rem; font-weight: 600; color: var(--text2); margin-bottom: 3px; }
 .file-zone-hint { font-size: 0.72rem; color: var(--muted); }
 .existing-file { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--blue-bg); border: 1px solid var(--blue-bd); border-radius: var(--radius-sm); font-size: 0.75rem; color: var(--blue); margin-top: 8px; }
 .existing-file a { color: var(--blue); font-weight: 600; text-decoration: none; }
 
-/* SCRAPE SECTION */
-.scrape-bar { background: var(--brown); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.scrape-bar-label { font-family: var(--font-head); font-size: 0.9rem; color: white; white-space: nowrap; letter-spacing: 0.02em; }
-.scrape-tabs { display: flex; gap: 3px; background: rgba(255,255,255,0.1); border-radius: 6px; padding: 3px; flex-shrink: 0; }
-.scrape-tab { background: none; border: none; color: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 0.75rem; font-weight: 600; padding: 5px 12px; border-radius: 4px; cursor: pointer; transition: all 0.12s; }
-.scrape-tab.active { background: var(--coral); color: white; }
+/* AUTOFILL SECTION */
+.scrape-bar { background: var(--black); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; position: relative; overflow: hidden; }
+.scrape-bar::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 22px 22px; }
+.scrape-bar > * { position: relative; z-index: 1; }
+.scrape-bar-label { font-size: 0.9rem; font-weight: 600; color: white; white-space: nowrap; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.scrape-bar-label::before { content: ''; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; flex-shrink: 0; }
+.scrape-tabs { display: flex; gap: 3px; background: rgba(255,255,255,0.08); border-radius: 6px; padding: 3px; flex-shrink: 0; }
+.scrape-tab { background: none; border: none; color: rgba(255,255,255,0.45); font-family: var(--font-body); font-size: 0.75rem; font-weight: 500; padding: 5px 12px; border-radius: 4px; cursor: pointer; transition: all 0.12s; }
+.scrape-tab.active { background: var(--primary); color: var(--black); font-weight: 600; }
 .scrape-mode { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
 .scrape-input-wrap { flex: 1; min-width: 200px; }
-.scrape-input { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm); color: white; font-family: var(--font-body); font-size: 0.875rem; padding: 9px 14px; outline: none; transition: all 0.15s; }
-.scrape-input::placeholder { color: rgba(255,255,255,0.35); }
-.scrape-input:focus { border-color: var(--coral); background: rgba(255,255,255,0.12); }
-.scrape-textarea { flex: 1; min-width: 200px; height: 70px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm); color: white; font-family: var(--font-body); font-size: 0.8rem; padding: 8px 12px; outline: none; resize: none; transition: all 0.15s; }
-.scrape-textarea::placeholder { color: rgba(255,255,255,0.35); }
-.scrape-textarea:focus { border-color: var(--coral); }
-.scrape-btn { background: var(--coral); color: white; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-family: var(--font-body); font-size: 0.825rem; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.scrape-input { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-sm); color: white; font-family: var(--font-body); font-size: 0.875rem; padding: 9px 14px; outline: none; transition: all 0.15s; }
+.scrape-input::placeholder { color: rgba(255,255,255,0.3); }
+.scrape-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.1); }
+.scrape-textarea { flex: 1; min-width: 200px; height: 70px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-sm); color: white; font-family: var(--font-body); font-size: 0.8rem; padding: 8px 12px; outline: none; resize: none; transition: all 0.15s; }
+.scrape-textarea::placeholder { color: rgba(255,255,255,0.3); }
+.scrape-textarea:focus { border-color: var(--primary); }
+.scrape-btn { background: var(--primary); color: var(--black); border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-family: var(--font-body); font-size: 0.825rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
 .scrape-btn:hover { background: var(--coral-dark); }
-.scrape-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.scrape-status { font-size: 0.78rem; color: rgba(255,255,255,0.6); white-space: nowrap; }
-.scrape-status.success { color: #4ade80; }
+.scrape-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.scrape-status { font-size: 0.78rem; color: rgba(255,255,255,0.5); white-space: nowrap; }
+.scrape-status.success { color: rgb(227,255,143); }
 .scrape-status.error { color: #f87171; }
-.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(34,36,42,0.3); border-top-color: var(--black); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media(max-width:700px){ .form-grid { grid-template-columns: 1fr 1fr; } }
@@ -50,18 +53,16 @@
     <a href="{% url 'application_list' %}" style="color:var(--muted);text-decoration:none;">Applications</a> / {{ title }}
   </p>
 
-  <!-- AUTOFILL SECTION -->
-  <div class="scrape-bar">
-    <span class="scrape-bar-label">✦ Autofill</span>
+  <div class="scrape-bar anim-fade-up">
+    <span class="scrape-bar-label">Autofill</span>
     <div class="scrape-tabs">
       <button type="button" class="scrape-tab active" id="tabUrl">From URL</button>
       <button type="button" class="scrape-tab" id="tabPaste">Paste Text</button>
     </div>
 
-    <!-- URL mode -->
     <div id="modeUrl" class="scrape-mode">
       <div class="scrape-input-wrap">
-        <input type="url" id="scrapeUrl" class="scrape-input" placeholder="Paste job URL (works best on company sites, Greenhouse, Lever, Workday)">
+        <input type="url" id="scrapeUrl" class="scrape-input" placeholder="Paste job URL (Greenhouse, Lever, Workday, company sites…)">
       </div>
       <button type="button" id="scrapeBtn" class="scrape-btn">
         <div class="spinner" id="scrapeSpinner"></div>
@@ -69,16 +70,15 @@
       </button>
     </div>
 
-    <!-- Paste mode -->
     <div id="modePaste" class="scrape-mode" style="display:none;flex:1;">
-      <textarea id="pasteText" class="scrape-textarea" placeholder="Paste the full job description text here, then click Extract..."></textarea>
+      <textarea id="pasteText" class="scrape-textarea" placeholder="Paste the full job description text here, then click Extract…"></textarea>
       <button type="button" id="parseBtn" class="scrape-btn">Extract</button>
     </div>
 
     <span class="scrape-status" id="scrapeStatus"></span>
   </div>
 
-  <div class="form-card">
+  <div class="form-card anim-fade-up d1">
     <form method="post" enctype="multipart/form-data" id="appForm">
       {% csrf_token %}
       <div class="form-grid">
@@ -91,6 +91,18 @@
           <label class="form-label">Company *</label>
           {{ form.company }}
           {% if form.company.errors %}<div class="error-text">{{ form.company.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          {{ form.location }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Salary range</label>
+          {{ form.salary_range }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Employment type</label>
+          {{ form.employment_type }}
         </div>
         <div class="form-group">
           <label class="form-label">Job Link</label>
@@ -133,12 +145,10 @@
 </div>
 
 <script>
-// File upload label
 document.querySelector('input[type=file]').addEventListener('change', function() {
   if(this.files[0]) document.getElementById('fileName').textContent = this.files[0].name;
 });
 
-// Tab switching
 document.getElementById('tabUrl').addEventListener('click', function() {
   document.getElementById('modeUrl').style.display = 'flex';
   document.getElementById('modePaste').style.display = 'none';
@@ -152,103 +162,53 @@ document.getElementById('tabPaste').addEventListener('click', function() {
   document.getElementById('tabUrl').classList.remove('active');
 });
 
-// Paste text parser - extract title, company from pasted text using simple heuristics
-document.getElementById('parseBtn').addEventListener('click', function() {
-  const text = document.getElementById('pasteText').value.trim();
-  const status = document.getElementById('scrapeStatus');
-  if (!text) return;
+const FILL_FIELDS = ['job_title','company','location','salary_range','employment_type','description','job_link'];
+const RESPONSE_KEY_MAP = { job_title: 'title', company: 'company', location: 'location', salary_range: 'salary_range', employment_type: 'employment_type', description: 'description' };
 
-  let title = '', company = '';
-
-  // First non-empty line is usually the job title
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (lines.length > 0) title = lines[0].substring(0, 200);
-
-  // Look for "at CompanyName", "· CompanyName", "Company:" patterns
-  for (const line of lines.slice(0, 10)) {
-    const atMatch = line.match(/^(.+?)\s+(?:at|@)\s+(.+)$/i);
-    if (atMatch) { title = atMatch[1].trim(); company = atMatch[2].trim(); break; }
-    const dotMatch = line.match(/^·\s*(.+)$/);
-    if (dotMatch && !company) { company = dotMatch[1].trim(); break; }
-    const colonMatch = line.match(/^(?:company|employer|organization)[:\s]+(.+)$/i);
-    if (colonMatch) { company = colonMatch[1].trim(); break; }
-  }
-
-  // Fill fields
+function applyExtracted(data, opts) {
+  opts = opts || {};
   let filled = 0;
-  if (title) { document.querySelector('[name=job_title]').value = title; filled++; }
-  if (company) { document.querySelector('[name=company]').value = company; filled++; }
-  document.querySelector('[name=description]').value = text.substring(0, 5000);
-  filled++;
-
-  ['job_title','company','description'].forEach(name => {
-    const el = document.querySelector('[name='+name+']');
-    if (el && el.value) { el.style.borderColor = '#22c55e'; setTimeout(() => el.style.borderColor = '', 3000); }
+  FILL_FIELDS.forEach(name => {
+    const el = document.querySelector('[name=' + name + ']');
+    if (!el) return;
+    let value;
+    if (name === 'job_link') {
+      value = opts.url || '';
+    } else {
+      value = data[RESPONSE_KEY_MAP[name]] || '';
+    }
+    if (value) {
+      el.value = value;
+      if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change'));
+      filled++;
+      el.style.borderColor = '#22c55e';
+      setTimeout(() => el.style.borderColor = '', 3000);
+    }
   });
+  return filled;
+}
 
-  status.textContent = '✓ Done — review and adjust title/company if needed';
-  status.className = 'scrape-status success';
-});
-
-// Autofill scraper
-document.getElementById('scrapeBtn').addEventListener('click', async function() {
-  const url = document.getElementById('scrapeUrl').value.trim();
-  if (!url) return;
-
-  const btn = this;
-  const spinner = document.getElementById('scrapeSpinner');
-  const btnText = document.getElementById('scrapeBtnText');
+async function runExtract(payload, buttonEls) {
+  const { btn, spinner, btnText, defaultBtnText } = buttonEls;
   const status = document.getElementById('scrapeStatus');
-
   btn.disabled = true;
-  spinner.style.display = 'block';
-  btnText.textContent = 'Fetching...';
+  if (spinner) spinner.style.display = 'block';
+  if (btnText) btnText.textContent = 'Working…';
   status.textContent = '';
   status.className = 'scrape-status';
-
   try {
     const res = await fetch('{% url "scrape_job" %}', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-      },
-      body: JSON.stringify({ url })
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+      body: JSON.stringify(payload),
     });
-
     const data = await res.json();
-
     if (data.error) {
       status.textContent = '✕ ' + data.error;
       status.className = 'scrape-status error';
     } else {
-      // Fill in fields
-      let filled = 0;
-      if (data.title) {
-        document.querySelector('[name=job_title]').value = data.title;
-        filled++;
-      }
-      if (data.company) {
-        document.querySelector('[name=company]').value = data.company;
-        filled++;
-      }
-      if (data.description) {
-        document.querySelector('[name=description]').value = data.description;
-        filled++;
-      }
-      // Set job link to scraped URL
-      document.querySelector('[name=job_link]').value = url;
-
-      // Highlight filled fields
-      ['job_title','company','description','job_link'].forEach(name => {
-        const el = document.querySelector(`[name=${name}]`);
-        if (el && el.value) {
-          el.style.borderColor = '#22c55e';
-          setTimeout(() => el.style.borderColor = '', 3000);
-        }
-      });
-
-      status.textContent = filled > 0 ? `✓ Filled ${filled} fields` : '⚠ Could not extract details from this page';
+      const filled = applyExtracted(data, { url: payload.url });
+      status.textContent = filled > 0 ? `✓ Filled ${filled} fields` : '⚠ Could not extract details';
       status.className = filled > 0 ? 'scrape-status success' : 'scrape-status error';
     }
   } catch(e) {
@@ -256,12 +216,33 @@ document.getElementById('scrapeBtn').addEventListener('click', async function() 
     status.className = 'scrape-status error';
   } finally {
     btn.disabled = false;
-    spinner.style.display = 'none';
-    btnText.textContent = 'Fetch Details';
+    if (spinner) spinner.style.display = 'none';
+    if (btnText) btnText.textContent = defaultBtnText;
   }
+}
+
+document.getElementById('scrapeBtn').addEventListener('click', function() {
+  const url = document.getElementById('scrapeUrl').value.trim();
+  if (!url) return;
+  runExtract({ url }, {
+    btn: this,
+    spinner: document.getElementById('scrapeSpinner'),
+    btnText: document.getElementById('scrapeBtnText'),
+    defaultBtnText: 'Fetch',
+  });
 });
 
-// Allow pressing Enter in URL field
+document.getElementById('parseBtn').addEventListener('click', function() {
+  const text = document.getElementById('pasteText').value.trim();
+  if (!text) return;
+  runExtract({ text }, {
+    btn: this,
+    spinner: null,
+    btnText: null,
+    defaultBtnText: 'Extract',
+  });
+});
+
 document.getElementById('scrapeUrl').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('scrapeBtn').click(); }
 });

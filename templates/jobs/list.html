@@ -1,144 +1,396 @@
 {% extends 'app_base.html' %}
-{% block title %}Applications — Trackr<script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-  row.addEventListener('click', function(e) {
-    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) return;
-    window.location.href = this.dataset.href;
-  });
-});
-</script>
-{% endblock %}
-{% block topbar_title %}Applications<script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-  row.addEventListener('click', function(e) {
-    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) return;
-    window.location.href = this.dataset.href;
-  });
-});
-</script>
-{% endblock %}
-{% block topbar_actions %}<a href="{% url 'add_application' %}" class="btn btn-coral btn-sm">+ New</a><script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-  row.addEventListener('click', function(e) {
-    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) return;
-    window.location.href = this.dataset.href;
-  });
-});
-</script>
-{% endblock %}
+{% block title %}Applications — Trackr{% endblock %}
+{% block topbar_title %}Applications{% endblock %}
+{% block topbar_actions %}<a href="{% url 'add_application' %}" class="btn btn-coral btn-sm">+ New</a>{% endblock %}
 {% block extra_css %}
 <style>
-.filter-bar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
-.filter-tabs { display: flex; gap: 3px; background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; box-shadow: var(--shadow); }
-.filter-tab { padding: 6px 18px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: var(--font-body); transition: all 0.12s; text-decoration: none; }
-.filter-tab:hover { color: var(--brown); }
-.filter-tab.active { background: var(--coral); color: white; box-shadow: 0 2px 8px rgba(224,90,58,0.3); }
-.search-wrap { position: relative; }
-.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
-.search-input { width: 280px; background: white; border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-body); font-size: 0.825rem; padding: 8px 12px 8px 34px; outline: none; transition: all 0.15s; box-shadow: var(--shadow); }
-.search-input:focus { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(224,90,58,0.1); }
+.main-content, .main-content * { font-family: 'Montserrat', 'Inter', sans-serif !important; }
+
+/* ── FILTER BAR ─────────────────────────────────────── */
+.filter-bar {
+  display: flex; gap: 0.75rem; align-items: center;
+  flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.filter-tabs {
+  display: flex; gap: 2px;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 3px; box-shadow: var(--shadow);
+}
+.filter-tab {
+  padding: 6px 18px; border-radius: 7px;
+  font-size: 0.82rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; border: none; background: none;
+  font-family: var(--font-body);
+  transition: all 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  text-decoration: none; white-space: nowrap;
+}
+.filter-tab:hover { color: var(--black); background: var(--grey35); }
+.filter-tab.active { background: var(--black); color: white; font-weight: 600; }
+
+.search-wrap { position: relative; margin-left: auto; }
+.search-icon {
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px; color: var(--muted); pointer-events: none;
+}
+.search-input {
+  width: 280px; background: white; border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: var(--font-body); font-size: 0.875rem;
+  padding: 8px 12px 8px 32px; outline: none; transition: all 0.15s;
+  box-shadow: var(--shadow);
+}
+.search-input:focus { border-color: var(--black); box-shadow: 0 0 0 3px rgba(34,36,42,0.08); }
 .search-input::placeholder { color: var(--muted); }
-.count-label { font-size: 0.75rem; color: var(--muted); margin-left: auto; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 
-.table-wrap { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md); }
+/* ── LIST HEADER ─────────────────────────────────────── */
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.875rem;
+}
+.list-header-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.95rem; font-weight: 700; color: var(--black);
+}
+.list-header-title svg { width: 17px; height: 17px; color: var(--muted); }
+.list-header-count { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
 
-/* Professional table header - not cramped Archivo Black */
-.table-head { display: grid; grid-template-columns: 2.2fr 2fr 130px 150px 170px; padding: 0.875rem 1.5rem; background: var(--brown); }
-.table-head-cell { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.1em; }
+/* ── SNACKBAR ROWS ─────────────────────────────────────── */
+.snack-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
-.table-row { display: grid; grid-template-columns: 2.2fr 2fr 130px 150px 170px; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); transition: background 0.1s; }
-.table-row:last-child { border-bottom: none; }
-.table-row:hover { background: #fdf9f6; }
+.app-snack {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: white; border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(34,36,42,0.04);
+  cursor: pointer;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s;
+  text-decoration: none; color: inherit;
+  position: relative;
+}
+.app-snack:hover {
+  border-color: var(--grey2);
+  box-shadow: 0 4px 16px rgba(34,36,42,0.09);
+  transform: translateY(-1px);
+}
 
-/* Company cell */
-.co-cell { display: flex; align-items: center; gap: 13px; }
-.co-logo-box { width: 44px; height: 44px; border-radius: 12px; background: var(--cream); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
-.co-logo-box img { width: 34px; height: 34px; object-fit: contain; display: block; }
-.co-logo-fallback { width: 34px; height: 34px; display: none; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 800; color: var(--brown); }
-.co-name-text { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--brown); letter-spacing: -0.01em; }
+/* Logo */
+.snack-logo {
+  width: 52px; height: 52px; border-radius: 13px;
+  background: var(--grey35); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.snack-logo img { width: 38px; height: 38px; object-fit: contain; display: block; }
+.snack-logo-fallback {
+  display: none; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  font-size: 1rem; font-weight: 700; color: var(--black);
+}
 
-.role-text { font-size: 0.85rem; font-weight: 500; color: var(--text); line-height: 1.3; }
-.role-link { font-size: 0.72rem; color: var(--muted); text-decoration: none; display: block; margin-top: 3px; }
-.role-link:hover { color: var(--coral); }
-.date-text { font-size: 0.8rem; color: var(--text2); font-weight: 500; }
+/* Company + role info */
+.snack-info { flex: 1; min-width: 0; }
+.snack-company {
+  font-size: 0.95rem; font-weight: 700; color: var(--black);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.snack-role {
+  font-size: 0.82rem; color: var(--text2); font-weight: 500;
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.snack-meta {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 4px; flex-wrap: wrap;
+}
+.snack-meta-chip {
+  font-size: 0.7rem; color: var(--muted);
+  display: flex; align-items: center; gap: 3px;
+}
+.snack-meta-chip svg { width: 11px; height: 11px; }
+.snack-divider { color: var(--border); font-size: 0.7rem; }
 
-.actions-cell { display: flex; align-items: center; gap: 6px; }
-.resume-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: var(--text2); background: var(--cream); padding: 5px 12px; border-radius: 7px; text-decoration: none; border: 1px solid var(--border2); transition: all 0.12s; }
-.resume-tag:hover { border-color: var(--coral); color: var(--coral); }
-.edit-link { font-size: 0.78rem; color: var(--muted); text-decoration: none; padding: 5px 11px; border-radius: 7px; transition: all 0.12s; font-weight: 600; }
-.edit-link:hover { color: var(--brown); background: var(--cream); }
-.del-link { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: all 0.12s; }
-.del-link:hover { background: var(--red-bg); color: var(--red); }
-.empty-row { padding: 4rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
-.clickable-row { cursor: pointer; }
-.clickable-row:hover { background: #fdf5f2 !important; }
-@media(max-width:800px){ .table-head,.table-row{grid-template-columns:1fr 1fr;} .hide-sm{display:none;} }
+/* Right side */
+.snack-right {
+  display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;
+}
+
+/* Stage dropdown */
+.stage-select {
+  appearance: none; -webkit-appearance: none;
+  border: none; outline: none;
+  border-radius: 7px;
+  padding: 6px 28px 6px 11px;
+  font-size: 0.78rem; font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body) !important;
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5L5 6.5L8 3.5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  transition: filter 0.15s, transform 0.15s;
+}
+.stage-select:hover { filter: brightness(0.95); transform: scale(1.02); }
+.stage-select:focus { outline: 2px solid rgba(34,36,42,0.15); outline-offset: 1px; }
+.status-applied   { background: rgba(37,197,250,0.12); color: #0a8bad; }
+.status-screening { background: var(--grey35); color: var(--grey1); }
+.status-interview { background: rgb(227,255,143); color: rgb(34,36,42); }
+.status-technical { background: var(--grey35); color: var(--grey1); }
+.status-offer     { background: rgb(34,36,42); color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5L5 6.5L8 3.5' stroke='%23ccc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.status-rejected  { background: #fef2f2; color: #dc2626; }
+.status-withdrawn { background: var(--grey35); color: var(--muted); }
+.status-accepted  { background: rgb(227,255,143); color: rgb(34,36,42); }
+
+/* Resume chip */
+.snack-resume a {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.72rem; font-weight: 500; color: var(--grey1);
+  background: var(--grey35); padding: 5px 11px;
+  border-radius: 7px; text-decoration: none;
+  border: 1px solid var(--border);
+  transition: all 0.15s; white-space: nowrap;
+}
+.snack-resume a:hover { background: var(--black); color: white; border-color: var(--black); }
+
+/* Actions */
+.snack-actions { display: flex; align-items: center; gap: 4px; }
+.act-edit {
+  font-size: 0.75rem; font-weight: 500; color: var(--muted);
+  text-decoration: none; padding: 5px 11px;
+  border-radius: 7px; transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.act-edit:hover { background: var(--grey35); color: var(--black); border-color: var(--border); }
+.act-del {
+  width: 30px; height: 30px; display: flex; align-items: center;
+  justify-content: center; border-radius: 7px; color: var(--muted);
+  text-decoration: none; font-size: 0.85rem; transition: all 0.15s;
+}
+.act-del:hover { background: var(--red-bg); color: var(--red); }
+
+/* Pagination footer */
+.pager {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 0; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;
+}
+.pager-info { font-size: 0.8rem; color: var(--muted); }
+.pager-nav { display: flex; align-items: center; gap: 4px; }
+.pager-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 32px; padding: 0 10px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: white; color: var(--text);
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
+  text-decoration: none; cursor: pointer; transition: all 0.15s;
+}
+.pager-btn:hover { background: var(--grey4); border-color: var(--grey2); }
+.pager-btn.active { background: var(--black); color: white; border-color: var(--black); }
+.pager-btn.disabled { color: var(--muted); pointer-events: none; opacity: 0.6; }
+.pager-ellipsis { padding: 0 6px; color: var(--muted); font-size: 0.78rem; }
+
+/* Toast for AJAX feedback */
+.ajax-toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+  background: white; border: 1px solid var(--green-bd); color: var(--green);
+  padding: 10px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 500;
+  box-shadow: 0 4px 20px rgba(34,36,42,0.12);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.ajax-toast.error { border-color: var(--red-bd); color: var(--red); }
+.ajax-toast.show { opacity: 1; transform: translateY(0); }
+
+/* Empty state */
+.empty-state-card {
+  padding: 4rem; text-align: center; color: var(--muted);
+  background: white; border: 1px solid var(--border); border-radius: 14px;
+}
+.empty-state-card a { color: var(--black); font-weight: 600; text-decoration: none; }
+
+@media (max-width: 700px) {
+  .snack-meta, .snack-resume { display: none; }
+  .snack-right { gap: 0.5rem; }
+}
 </style>
-<script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-  row.addEventListener('click', function(e) {
-    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) return;
-    window.location.href = this.dataset.href;
-  });
-});
-</script>
 {% endblock %}
 {% block page_content %}
-<div class="filter-bar">
+
+<div class="filter-bar anim-fade-up">
   <div class="filter-tabs">
-    <a href="{% url 'application_list' %}" class="filter-tab {% if not current_status %}active{% endif %}">All</a>
-    <a href="?status=applied" class="filter-tab {% if current_status == 'applied' %}active{% endif %}">Applied</a>
+    <a href="{% url 'application_list' %}"  class="filter-tab {% if not current_status %}active{% endif %}">All</a>
+    <a href="?status=applied"   class="filter-tab {% if current_status == 'applied' %}active{% endif %}">Applied</a>
     <a href="?status=interview" class="filter-tab {% if current_status == 'interview' %}active{% endif %}">Interview</a>
-    <a href="?status=offer" class="filter-tab {% if current_status == 'offer' %}active{% endif %}">Offer</a>
-    <a href="?status=rejected" class="filter-tab {% if current_status == 'rejected' %}active{% endif %}">Rejected</a>
+    <a href="?status=offer"     class="filter-tab {% if current_status == 'offer' %}active{% endif %}">Offer</a>
+    <a href="?status=rejected"  class="filter-tab {% if current_status == 'rejected' %}active{% endif %}">Rejected</a>
   </div>
   <form method="get" class="search-wrap">
     {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
-    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" name="search" class="search-input" placeholder="Search roles or companies..." value="{{ search }}">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="search" class="search-input"
+      placeholder="Search company, role, or location…" value="{{ search }}">
   </form>
-  <span class="count-label">{{ apps.count }} results</span>
 </div>
 
-<div class="table-wrap">
-  <div class="table-head">
-    <div class="table-head-cell">Company</div>
-    <div class="table-head-cell">Role</div>
-    <div class="table-head-cell hide-sm">Applied</div>
-    <div class="table-head-cell">Status</div>
-    <div class="table-head-cell">Actions</div>
+<div class="list-header anim-fade-up">
+  <div class="list-header-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    Jobs You Have Applied
   </div>
+  <span class="list-header-count">{{ total_count }} {% if total_count == 1 %}job{% else %}jobs{% endif %} applied</span>
+</div>
+
+{% if apps %}
+<div class="snack-list anim-fade-up">
   {% for app in apps %}
-  <div class="table-row clickable-row" data-href="{% url 'application_detail' app.pk %}">
-    <div class="co-cell">
-      <div class="co-logo-box">
-        <img src="{% url 'company_logo' app.company %}" alt="{{ app.company }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <div class="co-logo-fallback">{{ app.company|first|upper }}</div>
+  <div class="app-snack" onclick="if(!event.target.closest('a,button,form,select')) window.location.href='{% url 'application_detail' app.pk %}'">
+
+    <div class="snack-logo">
+      <img src="{% url 'company_logo' app.company %}" alt="{{ app.company }}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <div class="snack-logo-fallback">{{ app.company|first|upper }}</div>
+    </div>
+
+    <div class="snack-info">
+      <div class="snack-company">{{ app.company }}</div>
+      <div class="snack-role">{{ app.job_title }}</div>
+      <div class="snack-meta">
+        {% if app.location %}
+        <span class="snack-meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          {{ app.location }}
+        </span>
+        <span class="snack-divider">·</span>
+        {% endif %}
+        <span class="snack-meta-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {{ app.applied_date|date:"M j, Y" }}
+        </span>
+        {% if app.salary_range %}
+        <span class="snack-divider">·</span>
+        <span class="snack-meta-chip">{{ app.salary_range }}</span>
+        {% endif %}
       </div>
-      <span class="co-name-text">{{ app.company }}</span>
     </div>
-    <div>
-      <div class="role-text">{{ app.job_title }}</div>
-      {% if app.job_link %}<a href="{{ app.job_link }}" target="_blank" class="role-link">↗ View posting</a>{% endif %}
-    </div>
-    <div class="date-text hide-sm">{{ app.applied_date|date:"M d, Y" }}</div>
-    <div><span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span></div>
-    <div class="actions-cell">
-      {% if app.resume %}<a href="{% url 'view_resume' app.pk %}" class="resume-tag">Resume</a>{% endif %}
-      <a href="{% url 'edit_application' app.pk %}" class="edit-link">Edit</a>
-      <a href="{% url 'delete_application' app.pk %}" class="del-link">✕</a>
+
+    <div class="snack-right">
+      <div class="snack-resume" onclick="event.stopPropagation()">
+        {% if app.resume %}
+          <a href="{% url 'view_resume' app.pk %}">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="1" width="10" height="14" rx="1.5"/><line x1="6" y1="5" x2="10" y2="5"/><line x1="6" y1="8" x2="10" y2="8"/><line x1="6" y1="11" x2="8" y2="11"/></svg>
+            Resume
+          </a>
+        {% endif %}
+      </div>
+
+      <div onclick="event.stopPropagation()">
+        <form method="post" action="{% url 'update_status' app.pk %}" id="status-form-{{ app.pk }}" style="display:none">
+          {% csrf_token %}
+        </form>
+        <select name="status"
+                class="stage-select status-{{ app.status }}"
+                data-pk="{{ app.pk }}"
+                onchange="ajaxUpdateStatus(this)">
+          <option value="applied"   {% if app.status == 'applied' %}selected{% endif %}>Applied</option>
+          <option value="screening" {% if app.status == 'screening' %}selected{% endif %}>Screening</option>
+          <option value="interview" {% if app.status == 'interview' %}selected{% endif %}>Interview</option>
+          <option value="technical" {% if app.status == 'technical' %}selected{% endif %}>Technical</option>
+          <option value="offer"     {% if app.status == 'offer' %}selected{% endif %}>Offer</option>
+          <option value="rejected"  {% if app.status == 'rejected' %}selected{% endif %}>Rejected</option>
+          <option value="withdrawn" {% if app.status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+          <option value="accepted"  {% if app.status == 'accepted' %}selected{% endif %}>Accepted</option>
+        </select>
+      </div>
+
+      <div class="snack-actions" onclick="event.stopPropagation()">
+        <a href="{% url 'edit_application' app.pk %}" class="act-edit">Edit</a>
+        <a href="{% url 'delete_application' app.pk %}" class="act-del" title="Delete">✕</a>
+      </div>
     </div>
   </div>
-  {% empty %}
-  <div class="empty-row">No applications found. <a href="{% url 'add_application' %}" style="color:var(--coral);font-weight:700;">Add one →</a></div>
   {% endfor %}
 </div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pager">
+  <div class="pager-info">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+  </div>
+  <div class="pager-nav">
+    {% if page_obj.has_previous %}
+      <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ page_obj.previous_page_number }}">← Previous</a>
+    {% else %}
+      <span class="pager-btn disabled">← Previous</span>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <span class="pager-btn active">{{ num }}</span>
+      {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+        <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ num }}">{{ num }}</a>
+      {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+        <span class="pager-ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&{% endif %}page={{ page_obj.next_page_number }}">Next →</a>
+    {% else %}
+      <span class="pager-btn disabled">Next →</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state-card anim-fade-up">
+  <p style="margin-bottom:1rem;font-size:0.9rem;">No applications found.</p>
+  <a href="{% url 'add_application' %}" class="btn btn-coral btn-sm">Add your first →</a>
+</div>
+{% endif %}
+
+<!-- Toast for AJAX feedback -->
+<div class="ajax-toast" id="ajax-toast"></div>
+
 <script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-  row.addEventListener('click', function(e) {
-    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) return;
-    window.location.href = this.dataset.href;
+function showToast(msg, type) {
+  var t = document.getElementById('ajax-toast');
+  t.textContent = msg;
+  t.className = 'ajax-toast' + (type === 'error' ? ' error' : '') + ' show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.className = 'ajax-toast'; }, 2500);
+}
+
+function ajaxUpdateStatus(sel) {
+  var pk = sel.dataset.pk;
+  var newStatus = sel.value;
+  // Optimistic UI update
+  sel.className = 'stage-select status-' + newStatus;
+
+  var form = document.getElementById('status-form-' + pk);
+  var csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  fetch('/applications/' + pk + '/status/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: 'status=' + encodeURIComponent(newStatus) + '&csrfmiddlewaretoken=' + encodeURIComponent(csrf)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      showToast('Status updated', 'success');
+    } else {
+      showToast('Update failed', 'error');
+    }
+  })
+  .catch(function() {
+    showToast('Network error', 'error');
   });
-});
+}
 </script>
 {% endblock %}

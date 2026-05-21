@@ -10,49 +10,144 @@
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
 @media(max-width:900px){ .detail-grid { grid-template-columns: 1fr; } }
 
-/* LEFT PANEL */
-.info-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
-.info-header { background: var(--brown); padding: 1.75rem; display: flex; align-items: center; gap: 1.25rem; }
-.info-logo { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
-.info-logo img { width: 42px; height: 42px; object-fit: contain; display: block; }
-.info-logo-fallback { width: 42px; height: 42px; display: none; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 1.4rem; color: white; }
-.info-header-text h1 { font-family: var(--font-head); font-size: 1.5rem; color: white; letter-spacing: -0.01em; line-height: 1.1; }
-.info-header-text p { color: rgba(255,255,255,0.55); font-size: 0.85rem; margin-top: 4px; }
-.info-body { padding: 1.5rem; }
-.info-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 0.875rem 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+/* ── INFO CARD ─────────────────────────────────────── */
+.info-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(34,36,42,0.07);
+}
+
+/* Dark header with bigger logo */
+.info-header {
+  background: var(--black); padding: 2rem 2rem 1.75rem;
+  display: flex; align-items: center; gap: 1.5rem;
+  position: relative; overflow: hidden;
+}
+.info-header::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+/* Bigger logo */
+.info-logo {
+  width: 76px; height: 76px; border-radius: 18px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden; position: relative; z-index: 1;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.info-logo img { width: 56px; height: 56px; object-fit: contain; display: block; }
+.info-logo-fallback {
+  width: 56px; height: 56px; display: none; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 700; color: white;
+}
+.info-header-text { position: relative; z-index: 1; }
+.info-header-text h1 {
+  font-size: 1.55rem; font-weight: 700; color: white;
+  letter-spacing: -0.02em; line-height: 1.1;
+}
+.info-header-text p { color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-top: 5px; }
+
+/* Status banner */
+.status-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.875rem 1.75rem; background: var(--grey4);
+  border-bottom: 1px solid var(--border);
+}
+.status-label {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted);
+}
+
+/* Info rows */
+.info-body { padding: 0.5rem 1.75rem 1.5rem; }
+.info-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 0.9rem 0; border-bottom: 1px solid var(--border); gap: 1rem;
+}
 .info-row:last-child { border-bottom: none; }
-.info-key { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); min-width: 100px; padding-top: 2px; }
-.info-val { font-size: 0.875rem; color: var(--text); font-weight: 500; text-align: right; }
-.info-val a { color: var(--coral); text-decoration: none; font-weight: 600; }
-.info-val a:hover { text-decoration: underline; }
-.info-val.description { text-align: left; color: var(--text2); font-weight: 400; line-height: 1.7; font-size: 0.825rem; white-space: pre-wrap; }
+.info-key {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); min-width: 110px; padding-top: 2px;
+}
+.info-val { font-size: 0.9rem; color: var(--text); font-weight: 500; text-align: right; }
+.info-val a { color: var(--black); text-decoration: underline; font-weight: 600; }
+.info-val a:hover { color: var(--grey1); }
+.info-val.description {
+  text-align: left; color: var(--text2); font-weight: 400;
+  line-height: 1.75; font-size: 0.85rem; white-space: pre-wrap;
+}
 
-/* STATUS BANNER */
-.status-banner { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: var(--cream); border-bottom: 1px solid var(--border); }
-.status-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-
-/* RIGHT PANEL */
-.resume-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); position: sticky; top: 70px; }
-.resume-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--cream); }
-.resume-title { font-family: var(--font-head); font-size: 0.9rem; color: var(--brown); letter-spacing: 0.02em; }
+/* ── RESUME CARD ─────────────────────────────────────── */
+.resume-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(34,36,42,0.07);
+  position: sticky; top: 70px;
+}
+.resume-header {
+  padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--grey4);
+}
+.resume-title {
+  font-size: 0.8rem; font-weight: 700; color: var(--black);
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
 .resume-actions { display: flex; gap: 0.5rem; }
 .resume-frame { width: 100%; height: 75vh; border: none; display: block; }
 .no-resume { padding: 4rem 2rem; text-align: center; }
-.no-resume-icon { width: 60px; height: 60px; background: var(--cream); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; }
+.no-resume-icon {
+  width: 60px; height: 60px; background: var(--grey35); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1rem; font-size: 1.5rem;
+}
 .no-resume p { color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem; }
+
+/* Quick stats strip */
+.detail-stats {
+  display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.detail-stat {
+  background: white; border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.875rem 1.25rem;
+  display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 120px;
+  box-shadow: var(--shadow);
+}
+.detail-stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.detail-stat-val { font-size: 1rem; font-weight: 700; color: var(--black); }
 </style>
 {% endblock %}
 {% block page_content %}
 
-<!-- Breadcrumb -->
 <p class="text-xs text-muted mb-2">
   <a href="{% url 'application_list' %}" style="color:var(--muted);text-decoration:none;">Applications</a>
   / {{ app.company }} — {{ app.job_title }}
 </p>
 
-<div class="detail-grid">
+<!-- Quick stats strip -->
+<div class="detail-stats anim-fade-up">
+  <div class="detail-stat">
+    <span class="detail-stat-label">Applied</span>
+    <span class="detail-stat-val">{{ app.applied_date|date:"M j, Y" }}</span>
+  </div>
+  <div class="detail-stat">
+    <span class="detail-stat-label">Status</span>
+    <span class="detail-stat-val"><span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span></span>
+  </div>
+  <div class="detail-stat">
+    <span class="detail-stat-label">Last Updated</span>
+    <span class="detail-stat-val">{{ app.updated_at|date:"M j, Y" }}</span>
+  </div>
+  {% if app.salary_range %}
+  <div class="detail-stat">
+    <span class="detail-stat-label">Salary</span>
+    <span class="detail-stat-val">{{ app.salary_range }}</span>
+  </div>
+  {% endif %}
+</div>
 
-  <!-- LEFT: Application Info -->
+<div class="detail-grid anim-fade-up d1">
   <div class="info-card">
     <div class="info-header">
       <div class="info-logo">
@@ -62,24 +157,23 @@
       </div>
       <div class="info-header-text">
         <h1>{{ app.job_title }}</h1>
-        <p>{{ app.company }}</p>
+        <p>{{ app.company }}{% if app.location %} · {{ app.location }}{% endif %}</p>
       </div>
-    </div>
-
-    <div class="status-banner">
-      <span class="status-label">Current Status</span>
-      <span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span>
     </div>
 
     <div class="info-body">
+      {% if app.location %}
       <div class="info-row">
-        <span class="info-key">Applied</span>
-        <span class="info-val">{{ app.applied_date|date:"F j, Y" }}</span>
+        <span class="info-key">Location</span>
+        <span class="info-val">{{ app.location }}</span>
       </div>
+      {% endif %}
+      {% if app.employment_type %}
       <div class="info-row">
-        <span class="info-key">Last Updated</span>
-        <span class="info-val">{{ app.updated_at|date:"F j, Y" }}</span>
+        <span class="info-key">Type</span>
+        <span class="info-val">{{ app.get_employment_type_display }}</span>
       </div>
+      {% endif %}
       {% if app.job_link %}
       <div class="info-row">
         <span class="info-key">Job Link</span>
@@ -101,10 +195,9 @@
     </div>
   </div>
 
-  <!-- RIGHT: Resume Preview -->
   <div class="resume-card">
     <div class="resume-header">
-      <span class="resume-title">RESUME</span>
+      <span class="resume-title">Resume</span>
       {% if app.resume %}
       <div class="resume-actions">
         <a href="{% url 'download_resume' app.pk %}" class="btn btn-coral btn-sm">↓ Download</a>
@@ -132,6 +225,5 @@
       </div>
     {% endif %}
   </div>
-
 </div>
 {% endblock %}
