@@ -407,7 +407,7 @@ def scrape_job(request):
                 "Extract job posting details from the text below.\n"
                 "Reply with ONLY a valid JSON object — no explanation, no markdown, no code fences.\n"
                 "Keys: job_title, company, location, salary_range, employment_type, description.\n"
-                "employment_type must be one of: full_time, part_time, contract, internship, freelance, or empty string.\n"
+                "employment_type must be one of: full_time, part_time, contract, internship, temporary, or empty string.\n"
                 "description should be a clean 2-3 sentence summary of the role and requirements.\n"
                 "Use empty string for any field not found.\n\nText:\n" + content[:6000]
             )
@@ -828,23 +828,43 @@ def api_applications(request):
             applied_date = _dt.date.fromisoformat(date_str)
         except Exception:
             applied_date = timezone.localdate()
-        app = JobApplication.objects.create(
-            user=user,
-            job_title=job_title,
-            company=company,
-            location=get('location').strip(),
-            salary_range=get('salary_range').strip(),
-            employment_type=get('employment_type'),
-            job_link=get('job_link').strip(),
-            status=get('status', 'applied'),
-            applied_date=applied_date,
-            description=get('description').strip(),
-            notes=get('notes').strip(),
-        )
+        # Sanitise employment_type — only accept valid model choices
+        VALID_EMP = {'full_time', 'part_time', 'contract', 'internship', 'temporary'}
+        emp_type = get('employment_type').strip().lower().replace('-', '_').replace(' ', '_')
+        if emp_type not in VALID_EMP:
+            emp_type = ''
+
+        # Sanitise status
+        VALID_STATUS = {'applied','screening','interview','technical','offer','rejected','withdrawn','accepted'}
+        status_val = get('status', 'applied').strip().lower()
+        if status_val not in VALID_STATUS:
+            status_val = 'applied'
+
+        try:
+            app = JobApplication.objects.create(
+                user=user,
+                job_title=job_title[:200],
+                company=company[:200],
+                location=(get('location').strip())[:200],
+                salary_range=(get('salary_range').strip())[:120],
+                employment_type=emp_type,
+                job_link=(get('job_link').strip())[:500],
+                status=status_val,
+                applied_date=applied_date,
+                description=(get('description').strip())[:5000],
+                notes=(get('notes').strip())[:5000],
+            )
+        except Exception as e:
+            return _json({'error': 'Could not save application: ' + str(e)}, 500)
+
         # Attach resume if uploaded
         if 'resume' in request.FILES:
-            app.resume = request.FILES['resume']
-            app.save()
+            try:
+                app.resume = request.FILES['resume']
+                app.save()
+            except Exception:
+                pass  # resume save failure shouldn't block the app being added
+
         return _json({'ok': True, 'id': app.pk,
                       'company': app.company, 'job_title': app.job_title}, 201)
 
