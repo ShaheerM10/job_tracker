@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Trackr — Job Application Tracker",
+  "version": "1.0.0",
+  "description": "Track job applications directly from any job posting. Auto-detects job details from LinkedIn, Indeed, Greenhouse, Lever and more.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://jobtracker-production-b988.up.railway.app/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Trackr"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

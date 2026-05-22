@@ -17,6 +17,13 @@ urlpatterns = [
     path('logo/<str:company>/', views.company_logo, name='company_logo'),
     path('scrape-job/', views.scrape_job, name='scrape_job'),
     path('set-timezone/', views.set_timezone, name='set_timezone'),
+    # Chrome Extension API
+    path('api/auth/login/',    views.api_login,        name='api_login'),
+    path('api/auth/signup/',   views.api_signup,       name='api_signup'),
+    path('api/auth/logout/',   views.api_logout,       name='api_logout'),
+    path('api/me/',            views.api_me,           name='api_me'),
+    path('api/applications/',  views.api_applications, name='api_applications'),
+    path('api/scrape/',        views.api_scrape,       name='api_scrape'),
     path('settings/', views.user_settings, name='user_settings'),
 ]
 # Already imported views above

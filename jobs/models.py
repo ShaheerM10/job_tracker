@@ -1,4 +1,5 @@
 import datetime
+import secrets
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -57,3 +58,17 @@ class JobApplication(models.Model):
             'accepted': 'emerald',
         }
         return colors.get(self.status, 'gray')
+
+
+class AuthToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auth_tokens')
+    token = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def create_for_user(cls, user):
+        tok = secrets.token_urlsafe(48)
+        return cls.objects.create(user=user, token=tok)
+
+    def __str__(self):
+        return f"Token for {self.user.email}"

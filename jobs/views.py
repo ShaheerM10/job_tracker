@@ -561,3 +561,206 @@ def user_settings(request):
         'timezone_choices': TIMEZONE_CHOICES,
         'current_tz': current_tz,
     })
+
+
+# ─────────────────────────────────────────────────────────────
+#  CHROME EXTENSION API
+# ─────────────────────────────────────────────────────────────
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from .models import AuthToken
+
+def _cors(response):
+    """Add CORS headers so the Chrome extension can call the API."""
+    response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+    response['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS'
+    return response
+
+def _json(data, status=200):
+    return _cors(JsonResponse(data, status=status))
+
+def _get_api_user(request):
+    """Return User from Authorization: Token <tok> header, or None."""
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Token '):
+        try:
+            tok = AuthToken.objects.select_related('user').get(token=auth[6:])
+            return tok.user
+        except AuthToken.DoesNotExist:
+            pass
+    return None
+
+def _api_auth(view_fn):
+    from functools import wraps
+    @wraps(view_fn)
+    def wrapper(request, *args, **kwargs):
+        if request.method == 'OPTIONS':
+            return _cors(JsonResponse({}))
+        user = _get_api_user(request)
+        if not user:
+            return _json({'error': 'Unauthorized'}, 401)
+        request.api_user = user
+        return view_fn(request, *args, **kwargs)
+    return wrapper
+
+
+@csrf_exempt
+def api_login(request):
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    if request.method != 'POST':
+        return _json({'error': 'POST required'}, 405)
+    import json as _json_lib
+    from django.contrib.auth import authenticate
+    try:
+        body = _json_lib.loads(request.body)
+    except Exception:
+        return _json({'error': 'Invalid JSON'}, 400)
+    email = body.get('email', '').strip().lower()
+    password = body.get('password', '')
+    from django.contrib.auth.models import User as _User
+    try:
+        user_obj = _User.objects.get(email__iexact=email)
+        username = user_obj.username
+    except _User.DoesNotExist:
+        return _json({'error': 'Invalid email or password'}, 401)
+    user = authenticate(request, username=username, password=password)
+    if not user:
+        return _json({'error': 'Invalid email or password'}, 401)
+    tok = AuthToken.create_for_user(user)
+    return _json({
+        'token': tok.token,
+        'user': {'id': user.id, 'email': user.email,
+                 'name': user.get_full_name() or user.email.split('@')[0]}
+    })
+
+
+@csrf_exempt
+def api_signup(request):
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    if request.method != 'POST':
+        return _json({'error': 'POST required'}, 405)
+    import json as _json_lib
+    from django.contrib.auth.models import User as _User
+    try:
+        body = _json_lib.loads(request.body)
+    except Exception:
+        return _json({'error': 'Invalid JSON'}, 400)
+    email = body.get('email', '').strip().lower()
+    password = body.get('password', '')
+    first_name = body.get('first_name', '').strip()
+    last_name = body.get('last_name', '').strip()
+    if not email or not password:
+        return _json({'error': 'Email and password required'}, 400)
+    if len(password) < 8:
+        return _json({'error': 'Password must be at least 8 characters'}, 400)
+    if _User.objects.filter(email__iexact=email).exists():
+        return _json({'error': 'An account with this email already exists'}, 400)
+    user = _User.objects.create_user(
+        username=email, email=email, password=password,
+        first_name=first_name, last_name=last_name
+    )
+    tok = AuthToken.create_for_user(user)
+    return _json({
+        'token': tok.token,
+        'user': {'id': user.id, 'email': user.email,
+                 'name': user.get_full_name() or email.split('@')[0]}
+    }, 201)
+
+
+@csrf_exempt
+@_api_auth
+def api_logout(request):
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Token '):
+        AuthToken.objects.filter(token=auth[6:]).delete()
+    return _json({'ok': True})
+
+
+@csrf_exempt
+@_api_auth
+def api_me(request):
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    u = request.api_user
+    apps = JobApplication.objects.filter(user=u)
+    counts = dict(apps.values_list('status').annotate(c=Count('status')))
+    return _json({
+        'id': u.id, 'email': u.email,
+        'name': u.get_full_name() or u.email.split('@')[0],
+        'total': apps.count(),
+        'counts': counts,
+    })
+
+
+@csrf_exempt
+@_api_auth
+def api_applications(request):
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    user = request.api_user
+
+    if request.method == 'GET':
+        apps = JobApplication.objects.filter(user=user)[:10]
+        data = [{
+            'id': a.pk,
+            'company': a.company,
+            'job_title': a.job_title,
+            'status': a.status,
+            'status_display': a.get_status_display(),
+            'applied_date': str(a.applied_date),
+            'location': a.location or '',
+        } for a in apps]
+        return _json({'applications': data})
+
+    if request.method == 'POST':
+        import json as _json_lib
+        import datetime as _dt
+        try:
+            body = _json_lib.loads(request.body)
+        except Exception:
+            return _json({'error': 'Invalid JSON'}, 400)
+        job_title = (body.get('job_title') or '').strip()
+        company = (body.get('company') or '').strip()
+        if not job_title or not company:
+            return _json({'error': 'job_title and company are required'}, 400)
+        # Parse date safely
+        date_str = body.get('applied_date', '')
+        try:
+            applied_date = _dt.date.fromisoformat(date_str)
+        except Exception:
+            applied_date = timezone.localdate()
+        app = JobApplication.objects.create(
+            user=user,
+            job_title=job_title,
+            company=company,
+            location=(body.get('location') or '').strip(),
+            salary_range=(body.get('salary_range') or '').strip(),
+            job_link=(body.get('job_link') or '').strip(),
+            status=body.get('status', 'applied'),
+            applied_date=applied_date,
+            notes=(body.get('notes') or '').strip(),
+        )
+        return _json({'ok': True, 'id': app.pk,
+                      'company': app.company, 'job_title': app.job_title}, 201)
+
+    return _json({'error': 'Method not allowed'}, 405)
+
+
+@csrf_exempt
+@_api_auth
+def api_scrape(request):
+    """Proxy to the existing scrape_job logic, token-auth'd for the extension."""
+    if request.method == 'OPTIONS':
+        return _cors(JsonResponse({}))
+    if request.method != 'POST':
+        return _json({'error': 'POST required'}, 405)
+    # Temporarily set request.user so scrape_job works
+    request.user = request.api_user
+    resp = scrape_job(request)
+    resp['Access-Control-Allow-Origin'] = '*'
+    return resp
