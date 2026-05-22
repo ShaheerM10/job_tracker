@@ -241,21 +241,51 @@ async function doAiFill() {
 
   try {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url  = (tabs[0] && tabs[0].url) ? tabs[0].url : '';
+    const tab  = tabs[0];
+    const url  = (tab && tab.url) ? tab.url : '';
     if (!url.startsWith('http')) {
       showMainMsg('Open a job posting page first.', 'error');
       return;
     }
+
+    // Grab the already-rendered page text directly from the browser tab
+    // This works on JS-rendered sites (LinkedIn, Greenhouse, Lever, etc.)
+    let pageText = '';
+    try {
+      const injected = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          // Remove noise: nav, footer, scripts, cookie banners
+          const remove = document.querySelectorAll('nav, footer, header, script, style, [role="banner"], [role="navigation"], .cookie-banner, #onetrust-banner-sdk');
+          remove.forEach(function(el) { el.remove(); });
+          return (document.body && document.body.innerText) ? document.body.innerText.slice(0, 8000) : '';
+        }
+      });
+      pageText = (injected && injected[0] && injected[0].result) ? injected[0].result : '';
+    } catch (e) {
+      pageText = '';
+    }
+
+    if (!pageText.trim()) {
+      showMainMsg('Could not read page content. Try pasting the job text manually.', 'error');
+      return;
+    }
+
+    // Send extracted text + url to server for AI processing
     const result = await apiFetch('/api/scrape/', {
       method: 'POST',
-      body: JSON.stringify({ url: url })
+      body: JSON.stringify({ text: pageText, url: url })
     });
+
     if (result.ok) {
-      if (result.data.title)    document.getElementById('f-title').value    = result.data.title;
-      if (result.data.company)  document.getElementById('f-company').value  = result.data.company;
-      if (result.data.location) document.getElementById('f-location').value = result.data.location;
-      if (url)                  document.getElementById('f-url').value      = url;
-      showMainMsg('Fields filled from page content');
+      if (result.data.title)           document.getElementById('f-title').value       = result.data.title;
+      if (result.data.company)         document.getElementById('f-company').value     = result.data.company;
+      if (result.data.location)        document.getElementById('f-location').value    = result.data.location;
+      if (result.data.salary_range)    document.getElementById('f-salary').value      = result.data.salary_range;
+      if (result.data.employment_type) document.getElementById('f-employment').value  = result.data.employment_type;
+      if (result.data.description)     document.getElementById('f-description').value = result.data.description;
+      if (url)                         document.getElementById('f-url').value         = url;
+      showMainMsg('Fields filled successfully');
     } else {
       showMainMsg(result.data.error || 'AI fill failed - try manually.', 'error');
     }
