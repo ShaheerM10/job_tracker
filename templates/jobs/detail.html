@@ -116,6 +116,21 @@
 }
 .detail-stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .detail-stat-val { font-size: 1rem; font-weight: 700; color: var(--black); }
+
+/* Markdown-rendered description / notes */
+.prose-content { font-size: 0.875rem; color: var(--text2); line-height: 1.75; font-weight: 400; }
+.prose-content h1,.prose-content h2,.prose-content h3,.prose-content h4 {
+  font-size: 0.9rem; font-weight: 700; color: var(--black);
+  margin: 1.1rem 0 0.35rem; letter-spacing: -0.01em;
+}
+.prose-content h1 { font-size: 1rem; }
+.prose-content p { margin: 0.4rem 0; }
+.prose-content ul,.prose-content ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+.prose-content li { margin: 0.2rem 0; }
+.prose-content strong { font-weight: 700; color: var(--black); }
+.prose-content em { font-style: italic; }
+.prose-content hr { border: none; border-top: 1px solid var(--border); margin: 0.8rem 0; }
+.prose-content a { color: var(--black); text-decoration: underline; }
 </style>
 {% endblock %}
 {% block page_content %}
@@ -183,13 +198,13 @@
       {% if app.description %}
       <div class="info-row" style="flex-direction:column;gap:0.5rem;">
         <span class="info-key">Description</span>
-        <span class="info-val description">{{ app.description }}</span>
+        <div class="info-val prose-content" id="desc-content" data-raw="{{ app.description|escapejs }}"></div>
       </div>
       {% endif %}
       {% if app.notes %}
       <div class="info-row" style="flex-direction:column;gap:0.5rem;">
         <span class="info-key">Notes</span>
-        <span class="info-val description">{{ app.notes }}</span>
+        <div class="info-val prose-content" id="notes-content" data-raw="{{ app.notes|escapejs }}"></div>
       </div>
       {% endif %}
     </div>
@@ -226,4 +241,22 @@
     {% endif %}
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+marked.setOptions({ breaks: true, gfm: true });
+
+function renderMarkdown(elementId) {
+  var el = document.getElementById(elementId);
+  if (!el) return;
+  var raw = el.getAttribute('data-raw') || '';
+  if (!raw.trim()) { el.style.display = 'none'; return; }
+  el.innerHTML = marked.parse(raw);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderMarkdown('desc-content');
+  renderMarkdown('notes-content');
+});
+</script>
 {% endblock %}

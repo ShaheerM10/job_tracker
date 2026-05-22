@@ -408,7 +408,7 @@ def scrape_job(request):
                 "Reply with ONLY a valid JSON object — no explanation, no markdown, no code fences.\n"
                 "Keys: job_title, company, location, salary_range, employment_type, description.\n"
                 "employment_type must be one of: full_time, part_time, contract, internship, temporary, or empty string.\n"
-                "description: copy the COMPLETE job description exactly as written — every responsibility, requirement, qualification, and benefit. Preserve paragraph breaks using \\n. Do NOT summarize.\n"
+                "description: copy the COMPLETE job description in Markdown format — use ## for section headings (Responsibilities, Requirements, Qualifications, Benefits etc), bullet points (- item) for lists, and **bold** for emphasis. Include every detail. Do NOT summarize.\n"
                 "Use empty string for any field not found.\n\nText:\n" + content[:20000]
             )
             gr_resp = _gr.post(
