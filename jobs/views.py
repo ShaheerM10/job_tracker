@@ -398,36 +398,35 @@ def scrape_job(request):
 
     content = content[:15000]
 
-    # Try AI extraction via Hugging Face Inference API (free tier)
-    hf_token = os.environ.get('HF_TOKEN')
-    if hf_token:
+    # Try AI extraction via Groq (free tier — llama3 70b, very fast)
+    groq_key = os.environ.get('GROQ_API_KEY')
+    if groq_key:
         try:
-            import requests as _hf_req, json as _hf_json
+            import requests as _gr, json as _gj, re as _gre
             prompt = (
-                "Extract job details from the text below. "
-                "Reply with ONLY a JSON object with keys: "
-                "job_title, company, location, salary_range, employment_type, description. "
+                "Extract job posting details from the text below.\n"
+                "Reply with ONLY a valid JSON object — no explanation, no markdown, no code fences.\n"
+                "Keys: job_title, company, location, salary_range, employment_type, description.\n"
+                "employment_type must be one of: full_time, part_time, contract, internship, freelance, or empty string.\n"
+                "description should be a clean 2-3 sentence summary of the role and requirements.\n"
                 "Use empty string for any field not found.\n\nText:\n" + content[:6000]
             )
-            hf_resp = _hf_req.post(
-                'https://router.huggingface.co/novita/v3/openai/chat/completions',
-                headers={'Authorization': 'Bearer ' + hf_token, 'Content-Type': 'application/json'},
+            gr_resp = _gr.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                headers={'Authorization': 'Bearer ' + groq_key, 'Content-Type': 'application/json'},
                 json={
-                    'model': 'meta-llama/llama-3.1-8b-instruct',
+                    'model': 'llama-3.1-8b-instant',
                     'messages': [{'role': 'user', 'content': prompt}],
                     'max_tokens': 512,
                     'temperature': 0.1,
                 },
                 timeout=20,
             )
-            if hf_resp.ok:
-                raw = hf_resp.json()
-                text_out = raw['choices'][0]['message']['content'].strip()
-                # Extract JSON from response
-                import re as _re2
-                m = _re2.search(r'\{.*\}', text_out, _re2.S)
+            if gr_resp.ok:
+                text_out = gr_resp.json()['choices'][0]['message']['content'].strip()
+                m = _gre.search(r'\{[\s\S]*\}', text_out)
                 if m:
-                    data = _hf_json.loads(m.group())
+                    data = _gj.loads(m.group())
                     return JsonResponse({
                         'title':           (data.get('job_title') or '')[:200],
                         'company':         (data.get('company') or '')[:200],
