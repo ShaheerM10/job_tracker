@@ -24,6 +24,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   on('link-dashboard',  (e) => { e.preventDefault(); openWebsite('/dashboard/'); });
   document.querySelector('.detect-use')?.addEventListener('click', useDetected);
 
+  // File input: update label + show clear button
+  document.getElementById('f-resume')?.addEventListener('change', function() {
+    const zone  = document.getElementById('file-zone');
+    const label = document.getElementById('file-zone-label');
+    const clear = document.getElementById('btn-clear-file');
+    if (this.files[0]) {
+      label.textContent = this.files[0].name;
+      zone.classList.add('has-file');
+      clear.style.display = 'block';
+    }
+  });
+  document.getElementById('btn-clear-file')?.addEventListener('click', function(e) {
+    e.stopPropagation(); // don't re-open file picker
+    clearResumeField();
+  });
+
   // Enter key submits forms
   document.getElementById('login-password').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
   document.getElementById('signup-password').addEventListener('keydown', e => e.key === 'Enter' && doSignup());
@@ -97,8 +113,9 @@ function showMainMsg(msg, type = 'success') {
 }
 
 // ── API HELPERS ───────────────────────────────────────────────
-async function apiFetch(path, opts = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+async function apiFetch(path, opts = {}, isMultipart = false) {
+  const headers = { ...(opts.headers || {}) };
+  if (!isMultipart) headers['Content-Type'] = 'application/json';
   if (authToken) headers['Authorization'] = `Token ${authToken}`;
   try {
     const res = await fetch(`${BASE}${path}`, { ...opts, headers });
@@ -257,12 +274,29 @@ async function doAddApp() {
   const btn = document.getElementById('btn-add');
   btn.innerHTML = '<span class="spinner"></span> Adding…'; btn.disabled = true;
 
-  const { ok, data } = await apiFetch('/api/applications/', {
-    method: 'POST',
-    body: JSON.stringify({ company, job_title, status, applied_date: date,
-                           location, salary_range, employment_type, job_link,
-                           description, notes })
-  });
+  const resumeInput = document.getElementById('f-resume');
+  const resumeFile  = resumeInput?.files?.[0] || null;
+
+  let fetchOpts;
+  if (resumeFile) {
+    // Use FormData so the file is sent as multipart
+    const fd = new FormData();
+    fd.append('company', company); fd.append('job_title', job_title);
+    fd.append('status', status);   fd.append('applied_date', date);
+    fd.append('location', location); fd.append('salary_range', salary_range);
+    fd.append('employment_type', employment_type); fd.append('job_link', job_link);
+    fd.append('description', description); fd.append('notes', notes);
+    fd.append('resume', resumeFile);
+    fetchOpts = { method: 'POST', body: fd };
+  } else {
+    fetchOpts = {
+      method: 'POST',
+      body: JSON.stringify({ company, job_title, status, applied_date: date,
+                             location, salary_range, employment_type, job_link,
+                             description, notes })
+    };
+  }
+  const { ok, data } = await apiFetch('/api/applications/', fetchOpts, !!resumeFile);
 
   btn.innerHTML = '+ Add Application'; btn.disabled = false;
 
@@ -275,6 +309,7 @@ async function doAddApp() {
     ['f-company','f-title','f-location','f-salary','f-url','f-description','f-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-status').value = 'applied';
     document.getElementById('f-employment').value = '';
+    clearResumeField();
     setDateToday();
     document.getElementById('detect-banner').style.display = 'none';
   } else {
@@ -370,7 +405,17 @@ function resetGoogleButtons() {
   });
 }
 
-// ── UTILITIES ─────────────────────────────────────────────────
+// ── UTILITIES ─────────────────────────────────────────────
+function clearResumeField() {
+  const input = document.getElementById('f-resume');
+  const zone  = document.getElementById('file-zone');
+  const label = document.getElementById('file-zone-label');
+  const clear = document.getElementById('btn-clear-file');
+  if (input) input.value = '';
+  if (zone)  zone.classList.remove('has-file');
+  if (label) label.textContent = 'Click to attach resume';
+  if (clear) clear.style.display = 'none';
+}────
 function openWebsite(path) {
   chrome.tabs.create({ url: BASE + path });
 }

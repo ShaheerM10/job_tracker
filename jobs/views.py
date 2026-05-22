@@ -720,16 +720,22 @@ def api_applications(request):
     if request.method == 'POST':
         import json as _json_lib
         import datetime as _dt
-        try:
-            body = _json_lib.loads(request.body)
-        except Exception:
-            return _json({'error': 'Invalid JSON'}, 400)
-        job_title = (body.get('job_title') or '').strip()
-        company = (body.get('company') or '').strip()
+        # Support both JSON and multipart/form-data (for file uploads)
+        ct = request.content_type or ''
+        if 'multipart' in ct or 'form-data' in ct:
+            body = request.POST
+            get = lambda k, d='': (body.get(k) or d)
+        else:
+            try:
+                body = _json_lib.loads(request.body)
+            except Exception:
+                return _json({'error': 'Invalid JSON'}, 400)
+            get = lambda k, d='': (body.get(k) or d)
+        job_title = get('job_title').strip()
+        company   = get('company').strip()
         if not job_title or not company:
             return _json({'error': 'job_title and company are required'}, 400)
-        # Parse date safely
-        date_str = body.get('applied_date', '')
+        date_str = get('applied_date')
         try:
             applied_date = _dt.date.fromisoformat(date_str)
         except Exception:
@@ -738,15 +744,19 @@ def api_applications(request):
             user=user,
             job_title=job_title,
             company=company,
-            location=(body.get('location') or '').strip(),
-            salary_range=(body.get('salary_range') or '').strip(),
-            employment_type=(body.get('employment_type') or ''),
-            job_link=(body.get('job_link') or '').strip(),
-            status=body.get('status', 'applied'),
+            location=get('location').strip(),
+            salary_range=get('salary_range').strip(),
+            employment_type=get('employment_type'),
+            job_link=get('job_link').strip(),
+            status=get('status', 'applied'),
             applied_date=applied_date,
-            description=(body.get('description') or '').strip(),
-            notes=(body.get('notes') or '').strip(),
+            description=get('description').strip(),
+            notes=get('notes').strip(),
         )
+        # Attach resume if uploaded
+        if 'resume' in request.FILES:
+            app.resume = request.FILES['resume']
+            app.save()
         return _json({'ok': True, 'id': app.pk,
                       'company': app.company, 'job_title': app.job_title}, 201)
 

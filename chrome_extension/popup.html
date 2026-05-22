@@ -213,6 +213,30 @@ a { text-decoration: none; color: inherit; }
   margin: 0 auto 10px;
 }
 
+/* ── FILE ZONE ───────────────────────────────────── */
+.file-zone {
+  display: flex; align-items: center; gap: 10px;
+  border: 1.5px dashed var(--border); border-radius: 8px;
+  padding: 10px 12px; cursor: pointer; transition: all 0.15s;
+  background: var(--white); position: relative;
+}
+.file-zone:hover { border-color: var(--black); background: var(--bg); }
+.file-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.file-zone-icon { font-size: 18px; flex-shrink: 0; }
+.file-zone-text { flex: 1; min-width: 0; }
+.file-zone-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+.file-zone-hint  { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+.file-zone.has-file { border-color: var(--black); border-style: solid; }
+.file-zone.has-file .file-zone-label { color: var(--black); }
+.file-clear {
+  font-size: 16px; color: var(--muted); border: none; background: none;
+  cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+.file-clear:hover { color: var(--red); }
+
 /* ── FOOTER ──────────────────────────────────────── */
 .popup-footer {
   padding: 10px 16px; border-top: 1px solid var(--border);
@@ -399,6 +423,20 @@ a { text-decoration: none; color: inherit; }
   <div class="form-group">
     <label class="form-label">Notes <span class="opt">optional</span></label>
     <textarea id="f-notes" class="form-textarea" placeholder="Your personal notes, referrals, follow-up reminders…"></textarea>
+  </div>
+
+  <!-- ── RESUME ── -->
+  <div class="form-group" style="margin-top:4px">
+    <label class="form-label">Resume <span class="opt">optional</span></label>
+    <div class="file-zone" id="file-zone">
+      <input type="file" id="f-resume" accept=".pdf,.doc,.docx">
+      <div class="file-zone-icon">📄</div>
+      <div class="file-zone-text">
+        <div class="file-zone-label" id="file-zone-label">Click to attach resume</div>
+        <div class="file-zone-hint">PDF, DOC, or DOCX</div>
+      </div>
+      <button class="file-clear" id="btn-clear-file" style="display:none" title="Remove file">✕</button>
+    </div>
   </div>
 
   <!-- ── ACTIONS ── -->
