@@ -415,7 +415,8 @@ function clearResumeField() {
   if (zone)  zone.classList.remove('has-file');
   if (label) label.textContent = 'Click to attach resume';
   if (clear) clear.style.display = 'none';
-}────
+}
+
 function openWebsite(path) {
   chrome.tabs.create({ url: BASE + path });
 }
