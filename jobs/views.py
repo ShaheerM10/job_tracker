@@ -178,7 +178,7 @@ def dashboard(request):
 
 @login_required
 def application_list(request):
-    apps = JobApplication.objects.filter(user=request.user)
+    apps = JobApplication.objects.filter(user=request.user).order_by('-applied_date', '-id')
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '').strip()
     if status_filter:
@@ -398,39 +398,44 @@ def scrape_job(request):
 
     content = content[:15000]
 
-    # Try AI extraction if key is available
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if api_key:
+    # Try AI extraction via Hugging Face Inference API (free tier)
+    hf_token = os.environ.get('HF_TOKEN')
+    if hf_token:
         try:
-            from anthropic import Anthropic
-            client = Anthropic(api_key=api_key)
-            msg = client.messages.create(
-                model='claude-haiku-4-5',
-                max_tokens=2000,
-                tools=[EXTRACT_TOOL],
-                tool_choice={'type': 'tool', 'name': 'record_job'},
-                messages=[{
-                    'role': 'user',
-                    'content': (
-                        "Extract the job posting details from the content below. "
-                        "Use empty strings for fields you cannot confidently determine from the content. "
-                        "The description should be a clean, readable summary of the role, responsibilities, "
-                        "and requirements — not site boilerplate, navigation, or cookie banners.\n\n"
-                        "---\n" + content
-                    ),
-                }],
+            import requests as _hf_req, json as _hf_json
+            prompt = (
+                "Extract job details from the text below. "
+                "Reply with ONLY a JSON object with keys: "
+                "job_title, company, location, salary_range, employment_type, description. "
+                "Use empty string for any field not found.\n\nText:\n" + content[:6000]
             )
-            tool_use = next((b for b in msg.content if getattr(b, 'type', None) == 'tool_use'), None)
-            if tool_use:
-                data = tool_use.input or {}
-                return JsonResponse({
-                    'title': (data.get('job_title') or '')[:200],
-                    'company': (data.get('company') or '')[:200],
-                    'location': (data.get('location') or '')[:200],
-                    'salary_range': (data.get('salary_range') or '')[:120],
-                    'employment_type': data.get('employment_type') or '',
-                    'description': (data.get('description') or '')[:5000],
-                })
+            hf_resp = _hf_req.post(
+                'https://router.huggingface.co/novita/v3/openai/chat/completions',
+                headers={'Authorization': 'Bearer ' + hf_token, 'Content-Type': 'application/json'},
+                json={
+                    'model': 'meta-llama/llama-3.1-8b-instruct',
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'max_tokens': 512,
+                    'temperature': 0.1,
+                },
+                timeout=20,
+            )
+            if hf_resp.ok:
+                raw = hf_resp.json()
+                text_out = raw['choices'][0]['message']['content'].strip()
+                # Extract JSON from response
+                import re as _re2
+                m = _re2.search(r'\{.*\}', text_out, _re2.S)
+                if m:
+                    data = _hf_json.loads(m.group())
+                    return JsonResponse({
+                        'title':           (data.get('job_title') or '')[:200],
+                        'company':         (data.get('company') or '')[:200],
+                        'location':        (data.get('location') or '')[:200],
+                        'salary_range':    (data.get('salary_range') or '')[:120],
+                        'employment_type': data.get('employment_type') or '',
+                        'description':     (data.get('description') or '')[:5000],
+                    })
         except Exception:
             pass  # Fall through to heuristic extraction
 
