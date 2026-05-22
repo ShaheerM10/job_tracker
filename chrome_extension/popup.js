@@ -5,9 +5,30 @@ let detectedJob = null;
 
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Set today's date in the form
   setDateToday();
 
+  // ── Wire all event listeners (no inline onclick allowed in MV3) ──
+  const on = (id, fn) => document.getElementById(id)?.addEventListener('click', fn);
+  on('tab-login',       () => switchTab('login'));
+  on('tab-signup',      () => switchTab('signup'));
+  on('btn-login',       doLogin);
+  on('btn-signup',      doSignup);
+  on('btn-signout',     doSignout);
+  on('btn-google-login',  () => startGoogleLogin());
+  on('btn-google-signup', () => startGoogleLogin());
+  on('btn-ai',          doAiFill);
+  on('btn-add',         doAddApp);
+  on('btn-add-another', () => { showScreen('main'); loadRecent(); });
+  on('btn-open-trackr', () => openWebsite('/dashboard/'));
+  on('link-view-all',   (e) => { e.preventDefault(); openWebsite('/applications/'); });
+  on('link-dashboard',  (e) => { e.preventDefault(); openWebsite('/dashboard/'); });
+  document.querySelector('.detect-use')?.addEventListener('click', useDetected);
+
+  // Enter key submits forms
+  document.getElementById('login-password').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
+  document.getElementById('signup-password').addEventListener('keydown', e => e.key === 'Enter' && doSignup());
+
+  // ── Auth check ──
   const { token } = await chrome.storage.local.get('token');
   if (token) {
     authToken = token;
@@ -25,10 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     showScreen('auth');
   }
-
-  // Enter key submits forms
-  document.getElementById('login-password').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
-  document.getElementById('signup-password').addEventListener('keydown', e => e.key === 'Enter' && doSignup());
 });
 
 function setDateToday() {
@@ -298,6 +315,55 @@ async function updateFooter() {
   if (currentUser) {
 
   }
+}
+
+// ── GOOGLE OAUTH FLOW ────────────────────────────────────────
+async function startGoogleLogin() {
+  const callbackUrl = BASE + '/api/auth/extension-token/';
+  const loginUrl    = BASE + '/accounts/google/login/?process=login&next=/api/auth/extension-token/';
+
+  // Open Google login tab
+  const tab = await chrome.tabs.create({ url: loginUrl });
+
+  // Listen for the tab to land on our callback page
+  function onTabUpdated(tabId, changeInfo, tabInfo) {
+    if (tabId !== tab.id) return;
+    if (changeInfo.status !== 'complete') return;
+    if (!tabInfo.url || !tabInfo.url.includes('/api/auth/extension-token/')) return;
+
+    chrome.tabs.onUpdated.removeListener(onTabUpdated);
+
+    // Extract token from the page
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const el = document.getElementById('trackr-extension-token');
+        return el ? el.dataset.token : null;
+      }
+    }).then(async (results) => {
+      const token = results?.[0]?.result;
+      if (!token) { showAuthError('Could not get token. Please try again.'); return; }
+
+      authToken = token;
+      await chrome.storage.local.set({ token });
+
+      const user = await apiMe();
+      if (user) {
+        currentUser = user;
+        chrome.tabs.remove(tab.id).catch(() => {});
+        showScreen('main');
+        detectJobOnPage();
+        loadRecent();
+        updateFooter();
+      } else {
+        showAuthError('Login failed. Please try again.');
+      }
+    }).catch(() => {
+      showAuthError('Could not read login. Please use email/password.');
+    });
+  }
+
+  chrome.tabs.onUpdated.addListener(onTabUpdated);
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────

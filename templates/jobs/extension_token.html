@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trackr — Extension Login</title>
+<style>
+body { font-family: -apple-system, sans-serif; background: #f7f8f8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.card { background: white; border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); max-width: 340px; width: 100%; }
+.icon { width: 56px; height: 56px; background: #edf7f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; }
+h2 { font-size: 1.1rem; font-weight: 700; color: #22242A; margin-bottom: 0.5rem; }
+p  { font-size: 0.85rem; color: #B3BDBD; }
+</style>
+</head>
+<body>
+<!-- Token stored in data attribute — read by extension content script -->
+<div id="trackr-extension-token" data-token="{{ token }}" style="display:none"></div>
+<div class="card">
+  <div class="icon">✓</div>
+  <h2>Signed in as {{ user.email }}</h2>
+  <p>You can close this tab — the Trackr extension is now connected.</p>
+</div>
+</body>
+</html>

@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/me/',            views.api_me,           name='api_me'),
     path('api/applications/',  views.api_applications, name='api_applications'),
     path('api/scrape/',        views.api_scrape,       name='api_scrape'),
+    path('api/auth/extension-token/', views.api_extension_token, name='api_extension_token'),
     path('settings/', views.user_settings, name='user_settings'),
 ]
 # Already imported views above

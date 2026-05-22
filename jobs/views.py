@@ -764,3 +764,13 @@ def api_scrape(request):
     resp = scrape_job(request)
     resp['Access-Control-Allow-Origin'] = '*'
     return resp
+
+
+@login_required
+def api_extension_token(request):
+    """Called after Google OAuth — generates a token the extension can read."""
+    tok = AuthToken.create_for_user(request.user)
+    return render(request, 'jobs/extension_token.html', {
+        'token': tok.token,
+        'user': request.user,
+    })
