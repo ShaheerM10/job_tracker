@@ -435,8 +435,8 @@ def scrape_job(request):
             pass  # Fall through to heuristic extraction
 
     # Heuristic extraction (no API key needed)
-    # Works with JSON-LD schema.org, Open Graph, and common text patterns
     import re as _re
+    import json as _jmod
 
     raw_html = ''
     if url:
@@ -447,22 +447,27 @@ def scrape_job(request):
         except Exception:
             raw_html = ''
 
-    def _meta(html, prop):
-        m = _re.search(r'<meta[^>]+(?:property|name)=["']' + prop + r'["'][^>]+content=["']([^"']+)["']', html, _re.I)
-        if not m:
-            m = _re.search(r'<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']' + prop + r'["']', html, _re.I)
-        return m.group(1).strip() if m else ''
+    def _get_meta(html, prop_name):
+        """Extract meta tag content by property or name attribute."""
+        tag_re = _re.compile(r'<meta\b[^>]*/?\s*>', _re.I | _re.S)
+        for tag in tag_re.findall(html):
+            nm = _re.search(r'(?:name|property)\s*=\s*["\']([^"\']+)["\']', tag, _re.I)
+            if nm and nm.group(1).lower() == prop_name.lower():
+                cm = _re.search(r'content\s*=\s*["\']([^"\']+)["\']', tag, _re.I)
+                if cm:
+                    return cm.group(1).strip()
+        return ''
 
     result = {'title': '', 'company': '', 'location': '', 'salary_range': '', 'employment_type': '', 'description': ''}
 
     # 1. JSON-LD schema.org JobPosting
-    for block in _re.findall(r'<script[^>]+type=["']application/ld\+json["'][^>]*>(.*?)</script>', raw_html, _re.S | _re.I):
+    script_re = _re.compile(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', _re.S | _re.I)
+    for block in script_re.findall(raw_html):
         try:
-            import json as _j
-            schema = _j.loads(block)
+            schema = _jmod.loads(block)
             if isinstance(schema, list):
                 schema = schema[0]
-            if schema.get('@type') in ('JobPosting', 'jobPosting'):
+            if isinstance(schema, dict) and schema.get('@type', '').lower() == 'jobposting':
                 result['title']   = result['title']   or schema.get('title', '')
                 org = schema.get('hiringOrganization', {})
                 result['company'] = result['company'] or (org.get('name', '') if isinstance(org, dict) else '')
@@ -470,33 +475,33 @@ def scrape_job(request):
                 if isinstance(loc, dict):
                     addr = loc.get('address', {})
                     if isinstance(addr, dict):
-                        result['location'] = result['location'] or ', '.join(filter(None, [addr.get('addressLocality',''), addr.get('addressRegion',''), addr.get('addressCountry','')]))
+                        parts = [addr.get('addressLocality',''), addr.get('addressRegion',''), addr.get('addressCountry','')]
+                        result['location'] = result['location'] or ', '.join(p for p in parts if p)
                     elif isinstance(addr, str):
                         result['location'] = result['location'] or addr
-                result['description'] = result['description'] or schema.get('description', '')[:3000]
+                result['description'] = result['description'] or str(schema.get('description', ''))[:3000]
                 emp = schema.get('employmentType', '')
-                if emp:
-                    emp_map = {'FULL_TIME': 'full_time', 'PART_TIME': 'part_time', 'CONTRACTOR': 'contract', 'INTERN': 'internship', 'TEMPORARY': 'contract'}
-                    result['employment_type'] = emp_map.get(emp.upper(), '')
+                emp_map = {'FULL_TIME': 'full_time', 'PART_TIME': 'part_time', 'CONTRACTOR': 'contract', 'INTERN': 'internship'}
+                result['employment_type'] = emp_map.get(str(emp).upper(), '')
                 break
         except Exception:
             continue
 
     # 2. Open Graph / meta tags
     if not result['title']:
-        og = _meta(raw_html, 'og:title') or _meta(raw_html, 'twitter:title')
+        og = _get_meta(raw_html, 'og:title') or _get_meta(raw_html, 'twitter:title')
         if og:
-            result['title'] = _re.sub(r'\s*[|\-–]\s*.+$', '', og).strip()
+            result['title'] = _re.sub(r'\s*[|\-]\s*.+$', '', og).strip()
     if not result['title']:
         m = _re.search(r'<title[^>]*>([^<]+)</title>', raw_html, _re.I)
         if m:
-            result['title'] = _re.sub(r'\s*[|\-–]\s*.+$', '', m.group(1)).strip()
+            result['title'] = _re.sub(r'\s*[|\-]\s*.+$', '', m.group(1)).strip()
 
-    # 3. Text pattern fallback from trafilatura content
-    if not result['title']:
-        lines = [l.strip() for l in content.split('\n') if l.strip()]
-        if lines:
-            result['title'] = lines[0][:120]
+    # 3. Text fallback
+    if not result['title'] and content:
+        lines_txt = [l.strip() for l in content.split('\n') if l.strip()]
+        if lines_txt:
+            result['title'] = lines_txt[0][:120]
     if not result['company'] and url:
         m = _re.search(r'https?://(?:www\.)?([^./]+)', url)
         if m:
@@ -504,7 +509,7 @@ def scrape_job(request):
     if not result['description'] and content:
         result['description'] = content[:2000]
 
-    # Clean HTML tags from description
+    # Clean HTML from description
     result['description'] = _re.sub(r'<[^>]+>', ' ', result['description'])
     result['description'] = _re.sub(r'\s+', ' ', result['description']).strip()[:3000]
 
@@ -516,7 +521,6 @@ def scrape_job(request):
         'employment_type': result['employment_type'],
         'description':     result['description'],
     })
-
 
 
 def set_timezone(request):
