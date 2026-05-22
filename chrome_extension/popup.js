@@ -250,15 +250,19 @@ async function doAiFill() {
 
     // Grab the already-rendered page text directly from the browser tab
     // This works on JS-rendered sites (LinkedIn, Greenhouse, Lever, etc.)
+    // IMPORTANT: We clone the body so we never mutate the live page DOM
     let pageText = '';
     try {
       const injected = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
-          // Remove noise: nav, footer, scripts, cookie banners
-          const remove = document.querySelectorAll('nav, footer, header, script, style, [role="banner"], [role="navigation"], .cookie-banner, #onetrust-banner-sdk');
-          remove.forEach(function(el) { el.remove(); });
-          return (document.body && document.body.innerText) ? document.body.innerText.slice(0, 30000) : '';
+          // Clone body so we do NOT touch the live page at all
+          var clone = document.body ? document.body.cloneNode(true) : null;
+          if (!clone) return '';
+          // Remove noise elements from the CLONE only
+          var noise = clone.querySelectorAll('nav, footer, script, style, [role="banner"], [role="navigation"], .cookie-banner, #onetrust-banner-sdk, [aria-label="Cookie banner"]');
+          noise.forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
+          return (clone.innerText || clone.textContent || '').slice(0, 30000);
         }
       });
       pageText = (injected && injected[0] && injected[0].result) ? injected[0].result : '';
