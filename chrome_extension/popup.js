@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   on('btn-google-signup', () => startGoogleLogin());
   on('btn-ai',          doAiFill);
   on('btn-add',         doAddApp);
-  on('btn-add-another', () => { showScreen('main'); loadRecent(); });
+  on('btn-add-another', () => { showScreen('main'); });
   on('btn-open-trackr', () => openWebsite('/dashboard/'));
   on('link-view-all',   (e) => { e.preventDefault(); openWebsite('/applications/'); });
   on('link-dashboard',  (e) => { e.preventDefault(); openWebsite('/dashboard/'); });
@@ -37,8 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser = user;
       showScreen('main');
       detectJobOnPage();
-      loadRecent();
-      updateFooter();
     } else {
       await chrome.storage.local.remove('token');
       showScreen('auth');
@@ -139,8 +137,6 @@ async function doLogin() {
     await chrome.storage.local.set({ token: authToken });
     showScreen('main');
     detectJobOnPage();
-    loadRecent();
-    updateFooter();
   } else {
     showAuthError(data.error || 'Login failed. Please try again.');
   }
@@ -170,8 +166,7 @@ async function doSignup() {
     currentUser = data.user;
     await chrome.storage.local.set({ token: authToken });
     showScreen('main');
-    loadRecent();
-    updateFooter();
+    detectJobOnPage();
   } else {
     showAuthError(data.error || 'Sign up failed. Please try again.');
   }
@@ -244,12 +239,16 @@ async function doAiFill() {
 
 // ── ADD APPLICATION ───────────────────────────────────────────
 async function doAddApp() {
-  const company   = document.getElementById('f-company').value.trim();
-  const job_title = document.getElementById('f-title').value.trim();
-  const status    = document.getElementById('f-status').value;
-  const date      = document.getElementById('f-date').value;
-  const location  = document.getElementById('f-location').value.trim();
-  const job_link  = document.getElementById('f-url').value.trim();
+  const company         = document.getElementById('f-company').value.trim();
+  const job_title       = document.getElementById('f-title').value.trim();
+  const status          = document.getElementById('f-status').value;
+  const date            = document.getElementById('f-date').value;
+  const location        = document.getElementById('f-location').value.trim();
+  const salary_range    = document.getElementById('f-salary').value.trim();
+  const employment_type = document.getElementById('f-employment').value;
+  const job_link        = document.getElementById('f-url').value.trim();
+  const description     = document.getElementById('f-description').value.trim();
+  const notes           = document.getElementById('f-notes').value.trim();
 
   if (!company || !job_title) {
     showMainMsg('Company and Job Title are required.', 'error'); return;
@@ -260,7 +259,9 @@ async function doAddApp() {
 
   const { ok, data } = await apiFetch('/api/applications/', {
     method: 'POST',
-    body: JSON.stringify({ company, job_title, status, applied_date: date, location, job_link })
+    body: JSON.stringify({ company, job_title, status, applied_date: date,
+                           location, salary_range, employment_type, job_link,
+                           description, notes })
   });
 
   btn.innerHTML = '+ Add Application'; btn.disabled = false;
@@ -271,8 +272,9 @@ async function doAddApp() {
     document.getElementById('success-role').textContent = job_title;
     showScreen('success');
     // Clear form
-    ['f-company','f-title','f-location','f-url'].forEach(id => document.getElementById(id).value = '');
+    ['f-company','f-title','f-location','f-salary','f-url','f-description','f-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-status').value = 'applied';
+    document.getElementById('f-employment').value = '';
     setDateToday();
     document.getElementById('detect-banner').style.display = 'none';
   } else {

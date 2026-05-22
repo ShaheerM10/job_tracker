@@ -740,9 +740,11 @@ def api_applications(request):
             company=company,
             location=(body.get('location') or '').strip(),
             salary_range=(body.get('salary_range') or '').strip(),
+            employment_type=(body.get('employment_type') or ''),
             job_link=(body.get('job_link') or '').strip(),
             status=body.get('status', 'applied'),
             applied_date=applied_date,
+            description=(body.get('description') or '').strip(),
             notes=(body.get('notes') or '').strip(),
         )
         return _json({'ok': True, 'id': app.pk,
