@@ -250,19 +250,22 @@ async function doAiFill() {
 
     // Grab the already-rendered page text directly from the browser tab
     // This works on JS-rendered sites (LinkedIn, Greenhouse, Lever, etc.)
-    // IMPORTANT: We clone the body so we never mutate the live page DOM
+    // We do NOT mutate the live DOM — innerText only works on attached elements
+    // Grab the already-rendered page text directly from the browser tab
+    // This works on JS-rendered sites (LinkedIn, Greenhouse, Lever, etc.)
+    // We do NOT mutate the live DOM — innerText only works on attached elements
     let pageText = '';
     try {
       const injected = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
-          // Clone body so we do NOT touch the live page at all
-          var clone = document.body ? document.body.cloneNode(true) : null;
-          if (!clone) return '';
-          // Remove noise elements from the CLONE only
-          var noise = clone.querySelectorAll('nav, footer, script, style, [role="banner"], [role="navigation"], .cookie-banner, #onetrust-banner-sdk, [aria-label="Cookie banner"]');
-          noise.forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
-          return (clone.innerText || clone.textContent || '').slice(0, 30000);
+          // Prefer a focused content container; fall back to full body
+          var main = document.querySelector(
+            'main, [role="main"], article, #job-description, .job-description, ' +
+            '.description__text, .jobs-description, [data-testid="job-description"]'
+          );
+          var source = (main && main.innerText && main.innerText.trim().length > 200) ? main : document.body;
+          return (source ? (source.innerText || source.textContent || '') : '').slice(0, 30000);
         }
       });
       pageText = (injected && injected[0] && injected[0].result) ? injected[0].result : '';
