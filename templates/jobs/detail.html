@@ -196,15 +196,17 @@
       </div>
       {% endif %}
       {% if app.description %}
+      {{ app.description|json_script:"desc-raw" }}
       <div class="info-row" style="flex-direction:column;gap:0.5rem;">
         <span class="info-key">Description</span>
-        <div class="info-val prose-content" id="desc-content" data-raw="{{ app.description|escapejs }}"></div>
+        <div class="info-val prose-content" id="desc-content"></div>
       </div>
       {% endif %}
       {% if app.notes %}
+      {{ app.notes|json_script:"notes-raw" }}
       <div class="info-row" style="flex-direction:column;gap:0.5rem;">
         <span class="info-key">Notes</span>
-        <div class="info-val prose-content" id="notes-content" data-raw="{{ app.notes|escapejs }}"></div>
+        <div class="info-val prose-content" id="notes-content"></div>
       </div>
       {% endif %}
     </div>
@@ -246,17 +248,18 @@
 <script>
 marked.setOptions({ breaks: true, gfm: true });
 
-function renderMarkdown(elementId) {
-  var el = document.getElementById(elementId);
-  if (!el) return;
-  var raw = el.getAttribute('data-raw') || '';
-  if (!raw.trim()) { el.style.display = 'none'; return; }
-  el.innerHTML = marked.parse(raw);
+function renderFromJsonScript(scriptId, targetId) {
+  var scriptEl = document.getElementById(scriptId);
+  var targetEl = document.getElementById(targetId);
+  if (!scriptEl || !targetEl) return;
+  var text = JSON.parse(scriptEl.textContent || 'null');
+  if (!text || !text.trim()) { targetEl.style.display = 'none'; return; }
+  targetEl.innerHTML = marked.parse(text);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  renderMarkdown('desc-content');
-  renderMarkdown('notes-content');
+  renderFromJsonScript('desc-raw',   'desc-content');
+  renderFromJsonScript('notes-raw',  'notes-content');
 });
 </script>
 {% endblock %}
