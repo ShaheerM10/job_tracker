@@ -396,7 +396,7 @@ def scrape_job(request):
     if not content.strip():
         return JsonResponse({'error': 'No readable content found at that URL. Try pasting the text.'}, status=422)
 
-    content = content[:15000]
+    content = content[:30000]
 
     # Try AI extraction via Groq (free tier — llama3 70b, very fast)
     groq_key = os.environ.get('GROQ_API_KEY')
@@ -408,8 +408,8 @@ def scrape_job(request):
                 "Reply with ONLY a valid JSON object — no explanation, no markdown, no code fences.\n"
                 "Keys: job_title, company, location, salary_range, employment_type, description.\n"
                 "employment_type must be one of: full_time, part_time, contract, internship, temporary, or empty string.\n"
-                "description should be a clean 2-3 sentence summary of the role and requirements.\n"
-                "Use empty string for any field not found.\n\nText:\n" + content[:6000]
+                "description: copy the COMPLETE job description exactly as written — every responsibility, requirement, qualification, and benefit. Preserve paragraph breaks using \\n. Do NOT summarize.\n"
+                "Use empty string for any field not found.\n\nText:\n" + content[:20000]
             )
             gr_resp = _gr.post(
                 'https://api.groq.com/openai/v1/chat/completions',
@@ -417,7 +417,7 @@ def scrape_job(request):
                 json={
                     'model': 'llama-3.1-8b-instant',
                     'messages': [{'role': 'user', 'content': prompt}],
-                    'max_tokens': 512,
+                    'max_tokens': 4096,
                     'temperature': 0.1,
                 },
                 timeout=20,
@@ -433,7 +433,7 @@ def scrape_job(request):
                         'location':        (data.get('location') or '')[:200],
                         'salary_range':    (data.get('salary_range') or '')[:120],
                         'employment_type': data.get('employment_type') or '',
-                        'description':     (data.get('description') or '')[:5000],
+                        'description':     (data.get('description') or '')[:20000],
                     })
         except Exception:
             pass  # Fall through to heuristic extraction
@@ -483,7 +483,7 @@ def scrape_job(request):
                         result['location'] = result['location'] or ', '.join(p for p in parts if p)
                     elif isinstance(addr, str):
                         result['location'] = result['location'] or addr
-                result['description'] = result['description'] or str(schema.get('description', ''))[:3000]
+                result['description'] = result['description'] or str(schema.get('description', ''))[:20000]
                 emp = schema.get('employmentType', '')
                 emp_map = {'FULL_TIME': 'full_time', 'PART_TIME': 'part_time', 'CONTRACTOR': 'contract', 'INTERN': 'internship'}
                 result['employment_type'] = emp_map.get(str(emp).upper(), '')
@@ -515,7 +515,7 @@ def scrape_job(request):
 
     # Clean HTML from description
     result['description'] = _re.sub(r'<[^>]+>', ' ', result['description'])
-    result['description'] = _re.sub(r'\s+', ' ', result['description']).strip()[:3000]
+    result['description'] = _re.sub(r'\s+', ' ', result['description']).strip()[:20000]
 
     return JsonResponse({
         'title':           result['title'][:200],
@@ -848,10 +848,10 @@ def api_applications(request):
                 location=(get('location').strip())[:200],
                 salary_range=(get('salary_range').strip())[:120],
                 employment_type=emp_type,
-                job_link=(get('job_link').strip())[:500],
+                job_link=(get('job_link').strip())[:1000],
                 status=status_val,
                 applied_date=applied_date,
-                description=(get('description').strip())[:5000],
+                description=(get('description').strip())[:20000],
                 notes=(get('notes').strip())[:5000],
             )
         except Exception as e:

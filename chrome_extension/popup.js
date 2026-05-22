@@ -258,7 +258,7 @@ async function doAiFill() {
           // Remove noise: nav, footer, scripts, cookie banners
           const remove = document.querySelectorAll('nav, footer, header, script, style, [role="banner"], [role="navigation"], .cookie-banner, #onetrust-banner-sdk');
           remove.forEach(function(el) { el.remove(); });
-          return (document.body && document.body.innerText) ? document.body.innerText.slice(0, 8000) : '';
+          return (document.body && document.body.innerText) ? document.body.innerText.slice(0, 30000) : '';
         }
       });
       pageText = (injected && injected[0] && injected[0].result) ? injected[0].result : '';
