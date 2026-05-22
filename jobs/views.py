@@ -398,43 +398,123 @@ def scrape_job(request):
 
     content = content[:15000]
 
+    # Try AI extraction if key is available
     api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if not api_key:
-        return JsonResponse({'error': 'Server is not configured for AI extraction.'}, status=500)
+    if api_key:
+        try:
+            from anthropic import Anthropic
+            client = Anthropic(api_key=api_key)
+            msg = client.messages.create(
+                model='claude-haiku-4-5',
+                max_tokens=2000,
+                tools=[EXTRACT_TOOL],
+                tool_choice={'type': 'tool', 'name': 'record_job'},
+                messages=[{
+                    'role': 'user',
+                    'content': (
+                        "Extract the job posting details from the content below. "
+                        "Use empty strings for fields you cannot confidently determine from the content. "
+                        "The description should be a clean, readable summary of the role, responsibilities, "
+                        "and requirements — not site boilerplate, navigation, or cookie banners.\n\n"
+                        "---\n" + content
+                    ),
+                }],
+            )
+            tool_use = next((b for b in msg.content if getattr(b, 'type', None) == 'tool_use'), None)
+            if tool_use:
+                data = tool_use.input or {}
+                return JsonResponse({
+                    'title': (data.get('job_title') or '')[:200],
+                    'company': (data.get('company') or '')[:200],
+                    'location': (data.get('location') or '')[:200],
+                    'salary_range': (data.get('salary_range') or '')[:120],
+                    'employment_type': data.get('employment_type') or '',
+                    'description': (data.get('description') or '')[:5000],
+                })
+        except Exception:
+            pass  # Fall through to heuristic extraction
 
-    try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=api_key)
-        msg = client.messages.create(
-            model='claude-haiku-4-5',
-            max_tokens=2000,
-            tools=[EXTRACT_TOOL],
-            tool_choice={'type': 'tool', 'name': 'record_job'},
-            messages=[{
-                'role': 'user',
-                'content': (
-                    "Extract the job posting details from the content below. "
-                    "Use empty strings for fields you cannot confidently determine from the content. "
-                    "The description should be a clean, readable summary of the role, responsibilities, "
-                    "and requirements — not site boilerplate, navigation, or cookie banners.\n\n"
-                    "---\n" + content
-                ),
-            }],
-        )
-        tool_use = next((b for b in msg.content if getattr(b, 'type', None) == 'tool_use'), None)
-        if not tool_use:
-            return JsonResponse({'error': 'AI returned no structured result.'}, status=502)
-        data = tool_use.input or {}
-    except Exception:
-        return JsonResponse({'error': 'AI extraction failed. Try again or paste manually.'}, status=502)
+    # Heuristic extraction (no API key needed)
+    # Works with JSON-LD schema.org, Open Graph, and common text patterns
+    import re as _re
+
+    raw_html = ''
+    if url:
+        try:
+            import requests as _req
+            _r = _req.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=8)
+            raw_html = _r.text
+        except Exception:
+            raw_html = ''
+
+    def _meta(html, prop):
+        m = _re.search(r'<meta[^>]+(?:property|name)=["']' + prop + r'["'][^>]+content=["']([^"']+)["']', html, _re.I)
+        if not m:
+            m = _re.search(r'<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']' + prop + r'["']', html, _re.I)
+        return m.group(1).strip() if m else ''
+
+    result = {'title': '', 'company': '', 'location': '', 'salary_range': '', 'employment_type': '', 'description': ''}
+
+    # 1. JSON-LD schema.org JobPosting
+    for block in _re.findall(r'<script[^>]+type=["']application/ld\+json["'][^>]*>(.*?)</script>', raw_html, _re.S | _re.I):
+        try:
+            import json as _j
+            schema = _j.loads(block)
+            if isinstance(schema, list):
+                schema = schema[0]
+            if schema.get('@type') in ('JobPosting', 'jobPosting'):
+                result['title']   = result['title']   or schema.get('title', '')
+                org = schema.get('hiringOrganization', {})
+                result['company'] = result['company'] or (org.get('name', '') if isinstance(org, dict) else '')
+                loc = schema.get('jobLocation', {})
+                if isinstance(loc, dict):
+                    addr = loc.get('address', {})
+                    if isinstance(addr, dict):
+                        result['location'] = result['location'] or ', '.join(filter(None, [addr.get('addressLocality',''), addr.get('addressRegion',''), addr.get('addressCountry','')]))
+                    elif isinstance(addr, str):
+                        result['location'] = result['location'] or addr
+                result['description'] = result['description'] or schema.get('description', '')[:3000]
+                emp = schema.get('employmentType', '')
+                if emp:
+                    emp_map = {'FULL_TIME': 'full_time', 'PART_TIME': 'part_time', 'CONTRACTOR': 'contract', 'INTERN': 'internship', 'TEMPORARY': 'contract'}
+                    result['employment_type'] = emp_map.get(emp.upper(), '')
+                break
+        except Exception:
+            continue
+
+    # 2. Open Graph / meta tags
+    if not result['title']:
+        og = _meta(raw_html, 'og:title') or _meta(raw_html, 'twitter:title')
+        if og:
+            result['title'] = _re.sub(r'\s*[|\-–]\s*.+$', '', og).strip()
+    if not result['title']:
+        m = _re.search(r'<title[^>]*>([^<]+)</title>', raw_html, _re.I)
+        if m:
+            result['title'] = _re.sub(r'\s*[|\-–]\s*.+$', '', m.group(1)).strip()
+
+    # 3. Text pattern fallback from trafilatura content
+    if not result['title']:
+        lines = [l.strip() for l in content.split('\n') if l.strip()]
+        if lines:
+            result['title'] = lines[0][:120]
+    if not result['company'] and url:
+        m = _re.search(r'https?://(?:www\.)?([^./]+)', url)
+        if m:
+            result['company'] = m.group(1).replace('-', ' ').title()
+    if not result['description'] and content:
+        result['description'] = content[:2000]
+
+    # Clean HTML tags from description
+    result['description'] = _re.sub(r'<[^>]+>', ' ', result['description'])
+    result['description'] = _re.sub(r'\s+', ' ', result['description']).strip()[:3000]
 
     return JsonResponse({
-        'title': (data.get('job_title') or '')[:200],
-        'company': (data.get('company') or '')[:200],
-        'location': (data.get('location') or '')[:200],
-        'salary_range': (data.get('salary_range') or '')[:120],
-        'employment_type': data.get('employment_type') or '',
-        'description': (data.get('description') or '')[:5000],
+        'title':           result['title'][:200],
+        'company':         result['company'][:200],
+        'location':        result['location'][:200],
+        'salary_range':    result['salary_range'][:120],
+        'employment_type': result['employment_type'],
+        'description':     result['description'],
     })
 
 
