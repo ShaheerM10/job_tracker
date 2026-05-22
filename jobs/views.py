@@ -398,43 +398,67 @@ def scrape_job(request):
 
     content = content[:30000]
 
-    # Try AI extraction via Groq (free tier — llama3 70b, very fast)
+    # Try AI extraction via Groq (free tier)
     groq_key = os.environ.get('GROQ_API_KEY')
     if groq_key:
         try:
             import requests as _gr, json as _gj, re as _gre
-            prompt = (
-                "Extract job posting details from the text below.\n"
-                "Reply with ONLY a valid JSON object — no explanation, no markdown, no code fences.\n"
-                "Keys: job_title, company, location, salary_range, employment_type, description.\n"
-                "employment_type must be one of: full_time, part_time, contract, internship, temporary, or empty string.\n"
-                "description: copy the COMPLETE job description in Markdown format — use ## for section headings (Responsibilities, Requirements, Qualifications, Benefits etc), bullet points (- item) for lists, and **bold** for emphasis. Include every detail. Do NOT summarize.\n"
-                "Use empty string for any field not found.\n\nText:\n" + content[:20000]
+
+            def _groq(messages, max_tokens=512):
+                r = _gr.post(
+                    'https://api.groq.com/openai/v1/chat/completions',
+                    headers={'Authorization': 'Bearer ' + groq_key, 'Content-Type': 'application/json'},
+                    json={
+                        'model': 'llama-3.1-8b-instant',
+                        'messages': messages,
+                        'max_tokens': max_tokens,
+                        'temperature': 0.1,
+                    },
+                    timeout=25,
+                )
+                if r.ok:
+                    return r.json()['choices'][0]['message']['content'].strip()
+                return None
+
+            # CALL 1: extract structured fields as clean JSON (no description)
+            fields_prompt = (
+                "From the job posting text below, extract ONLY these fields as a JSON object:\n"
+                "  job_title, company, location, salary_range, employment_type\n"
+                "Rules:\n"
+                "- Reply with ONLY the JSON object, no explanation, no code fences\n"
+                "- employment_type: one of full_time, part_time, contract, internship, temporary, or empty string\n"
+                "- Use empty string for any field not found\n\n"
+                "Text:\n" + content[:5000]
             )
-            gr_resp = _gr.post(
-                'https://api.groq.com/openai/v1/chat/completions',
-                headers={'Authorization': 'Bearer ' + groq_key, 'Content-Type': 'application/json'},
-                json={
-                    'model': 'llama-3.1-8b-instant',
-                    'messages': [{'role': 'user', 'content': prompt}],
-                    'max_tokens': 4096,
-                    'temperature': 0.1,
-                },
-                timeout=20,
-            )
-            if gr_resp.ok:
-                text_out = gr_resp.json()['choices'][0]['message']['content'].strip()
-                m = _gre.search(r'\{[\s\S]*\}', text_out)
+            fields_out = _groq([{'role': 'user', 'content': fields_prompt}], max_tokens=256)
+            fields = {}
+            if fields_out:
+                m = _gre.search(r'\{[^{}]*\}', fields_out, _gre.S)
                 if m:
-                    data = _gj.loads(m.group())
-                    return JsonResponse({
-                        'title':           (data.get('job_title') or '')[:200],
-                        'company':         (data.get('company') or '')[:200],
-                        'location':        (data.get('location') or '')[:200],
-                        'salary_range':    (data.get('salary_range') or '')[:120],
-                        'employment_type': data.get('employment_type') or '',
-                        'description':     (data.get('description') or '')[:20000],
-                    })
+                    fields = _gj.loads(m.group())
+
+            # CALL 2: extract full description as plain Markdown (not inside JSON)
+            desc_prompt = (
+                "From the job posting text below, extract the COMPLETE job description.\n"
+                "Format it in Markdown:\n"
+                "- Use ## for main section headings (About the Role, Responsibilities, Requirements, Qualifications, Benefits, etc.)\n"
+                "- Use bullet points (- item) for lists\n"
+                "- Use **bold** for important terms\n"
+                "- Preserve ALL content — do not skip or summarise anything\n"
+                "- Output ONLY the formatted description, nothing else\n\n"
+                "Text:\n" + content[:20000]
+            )
+            desc_out = _groq([{'role': 'user', 'content': desc_prompt}], max_tokens=4096)
+
+            if fields or desc_out:
+                return JsonResponse({
+                    'title':           (fields.get('job_title') or '')[:200],
+                    'company':         (fields.get('company') or '')[:200],
+                    'location':        (fields.get('location') or '')[:200],
+                    'salary_range':    (fields.get('salary_range') or '')[:120],
+                    'employment_type': fields.get('employment_type') or '',
+                    'description':     (desc_out or '')[:20000],
+                })
         except Exception:
             pass  # Fall through to heuristic extraction
 
