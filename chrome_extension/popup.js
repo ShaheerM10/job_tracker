@@ -318,52 +318,54 @@ async function updateFooter() {
 }
 
 // ── GOOGLE OAUTH FLOW ────────────────────────────────────────
+// Background service worker handles the tab lifecycle (popup is destroyed when user
+// clicks the Google tab). Popup just asks background to start, then polls storage.
 async function startGoogleLogin() {
-  const callbackUrl = BASE + '/api/auth/extension-token/';
-  const loginUrl    = BASE + '/accounts/google/login/?process=login&next=/api/auth/extension-token/';
+  // Clear any stale token/flag first
+  await chrome.storage.local.remove(['token', 'googleLoginDone']);
 
-  // Open Google login tab
-  const tab = await chrome.tabs.create({ url: loginUrl });
+  // Disable Google buttons and show status
+  ['btn-google-login', 'btn-google-signup'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Waiting for Google…'; }
+  });
+  clearAuthError();
 
-  // Listen for the tab to land on our callback page
-  function onTabUpdated(tabId, changeInfo, tabInfo) {
-    if (tabId !== tab.id) return;
-    if (changeInfo.status !== 'complete') return;
-    if (!tabInfo.url || !tabInfo.url.includes('/api/auth/extension-token/')) return;
+  // Ask background worker to open the OAuth tab
+  chrome.runtime.sendMessage({ action: 'startGoogleLogin' });
 
-    chrome.tabs.onUpdated.removeListener(onTabUpdated);
-
-    // Extract token from the page
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        const el = document.getElementById('trackr-extension-token');
-        return el ? el.dataset.token : null;
-      }
-    }).then(async (results) => {
-      const token = results?.[0]?.result;
-      if (!token) { showAuthError('Could not get token. Please try again.'); return; }
-
+  // Poll chrome.storage for the token (background sets it after OAuth completes)
+  // Even if popup closes, when re-opened DOMContentLoaded will pick up the token
+  let polls = 0;
+  const poll = setInterval(async () => {
+    polls++;
+    const { token } = await chrome.storage.local.get('token');
+    if (token) {
+      clearInterval(poll);
       authToken = token;
-      await chrome.storage.local.set({ token });
-
       const user = await apiMe();
       if (user) {
         currentUser = user;
-        chrome.tabs.remove(tab.id).catch(() => {});
         showScreen('main');
-        detectJobOnPage();
-        loadRecent();
-        updateFooter();
+        detectJobOnPage(); loadRecent(); updateFooter();
       } else {
-        showAuthError('Login failed. Please try again.');
+        await chrome.storage.local.remove('token');
+        showAuthError('Login failed — please try again.');
+        resetGoogleButtons();
       }
-    }).catch(() => {
-      showAuthError('Could not read login. Please use email/password.');
-    });
-  }
+    } else if (polls >= 120) { // 2-min timeout
+      clearInterval(poll);
+      resetGoogleButtons();
+      showAuthError('Login timed out. Please try again.');
+    }
+  }, 1000);
+}
 
-  chrome.tabs.onUpdated.addListener(onTabUpdated);
+function resetGoogleButtons() {
+  ['btn-google-login', 'btn-google-signup'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue with Google'; }
+  });
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────
