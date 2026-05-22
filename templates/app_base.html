@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <a href="{% url 'dashboard' %}">
-        <div class="logo-mark">
-          <svg viewBox="0 0 16 16"><path d="M8 2L14 6V10L8 14L2 10V6L8 2Z"/></svg>
-        </div>
-        Trackr
+      <a href="{% url 'dashboard' %}" style="display:block;padding:4px 0;">
+        <img src="{% static 'img/logo.png' %}" alt="Trackr" style="height:38px;width:auto;filter:brightness(0) invert(1);">
       </a>
     </div>
     <div class="sidebar-section">
