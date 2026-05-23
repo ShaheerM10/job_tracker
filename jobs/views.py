@@ -414,7 +414,7 @@ def scrape_job(request):
                         'max_tokens': max_tokens,
                         'temperature': 0.1,
                     },
-                    timeout=25,
+                    timeout=40,
                 )
                 if r.ok:
                     return r.json()['choices'][0]['message']['content'].strip()
@@ -457,7 +457,7 @@ def scrape_job(request):
                     'location':        (fields.get('location') or '')[:200],
                     'salary_range':    (fields.get('salary_range') or '')[:120],
                     'employment_type': fields.get('employment_type') or '',
-                    'description':     (desc_out or '')[:20000],
+                    'description':     (desc_out or content[:10000])[:20000],
                 })
         except Exception:
             pass  # Fall through to heuristic extraction
@@ -535,7 +535,7 @@ def scrape_job(request):
         if m:
             result['company'] = m.group(1).replace('-', ' ').title()
     if not result['description'] and content:
-        result['description'] = content[:2000]
+        result['description'] = content[:10000]
 
     # Clean HTML from description
     result['description'] = _re.sub(r'<[^>]+>', ' ', result['description'])
