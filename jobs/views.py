@@ -414,7 +414,7 @@ def scrape_job(request):
                         'max_tokens': max_tokens,
                         'temperature': 0.1,
                     },
-                    timeout=40,
+                    timeout=25,
                 )
                 if r.ok:
                     return r.json()['choices'][0]['message']['content'].strip()
@@ -448,7 +448,7 @@ def scrape_job(request):
                 "- Output ONLY the formatted description, nothing else\n\n"
                 "Text:\n" + content[:20000]
             )
-            desc_out = _groq([{'role': 'user', 'content': desc_prompt}], max_tokens=4096)
+            desc_out = _groq([{'role': 'user', 'content': desc_prompt}], max_tokens=1500)
 
             if fields or desc_out:
                 return JsonResponse({
@@ -457,7 +457,7 @@ def scrape_job(request):
                     'location':        (fields.get('location') or '')[:200],
                     'salary_range':    (fields.get('salary_range') or '')[:120],
                     'employment_type': fields.get('employment_type') or '',
-                    'description':     (desc_out or content[:10000])[:20000],
+                    'description':     (desc_out or _plaintext_to_md(content[:10000]))[:20000],
                 })
         except Exception:
             pass  # Fall through to heuristic extraction
@@ -465,6 +465,38 @@ def scrape_job(request):
     # Heuristic extraction (no API key needed)
     import re as _re
     import json as _jmod
+
+    def _plaintext_to_md(text):
+        """Convert raw plain text job description to basic Markdown formatting."""
+        if not text:
+            return text
+        # Known section heading keywords
+        headings = [
+            'about the role', 'about the job', 'about us', 'about the company',
+            'the role', 'the position', 'job summary', 'job overview', 'overview',
+            'responsibilities', 'what you will do', 'what you'll do', 'your role',
+            'requirements', 'qualifications', 'what we're looking for', 'what you bring',
+            'what you need', 'preferred qualifications', 'nice to have',
+            'benefits', 'perks', 'what we offer', 'compensation', 'salary',
+            'how to apply', 'apply', 'about the team',
+        ]
+        lines = text.splitlines()
+        out = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                out.append('')
+                continue
+            lower = stripped.lower().rstrip(':').rstrip('.')
+            if lower in headings or any(lower == h for h in headings):
+                out.append('\n## ' + stripped.rstrip(':'))
+            elif stripped.startswith(('• ', '· ', '- ', '* ', '◦ ')):
+                out.append('- ' + stripped[2:].strip())
+            elif len(stripped) < 80 and stripped.endswith(':') and stripped[0].isupper():
+                out.append('\n## ' + stripped[:-1])
+            else:
+                out.append(stripped)
+        return '\n'.join(out).strip()
 
     raw_html = ''
     if url:
@@ -535,11 +567,11 @@ def scrape_job(request):
         if m:
             result['company'] = m.group(1).replace('-', ' ').title()
     if not result['description'] and content:
-        result['description'] = content[:10000]
+        result['description'] = _plaintext_to_md(content[:10000])
 
-    # Clean HTML from description
+    # Clean HTML from description (but preserve newlines for Markdown)
     result['description'] = _re.sub(r'<[^>]+>', ' ', result['description'])
-    result['description'] = _re.sub(r'\s+', ' ', result['description']).strip()[:20000]
+    result['description'] = result['description'].strip()[:20000]
 
     return JsonResponse({
         'title':           result['title'][:200],
