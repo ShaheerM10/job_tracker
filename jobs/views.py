@@ -474,8 +474,8 @@ def scrape_job(request):
         headings = [
             'about the role', 'about the job', 'about us', 'about the company',
             'the role', 'the position', 'job summary', 'job overview', 'overview',
-            'responsibilities', 'what you will do', 'what you'll do', 'your role',
-            'requirements', 'qualifications', 'what we're looking for', 'what you bring',
+            'responsibilities', 'what you will do', "what you'll do", 'your role',
+            'requirements', 'qualifications', "what we're looking for", 'what you bring',
             'what you need', 'preferred qualifications', 'nice to have',
             'benefits', 'perks', 'what we offer', 'compensation', 'salary',
             'how to apply', 'apply', 'about the team',
